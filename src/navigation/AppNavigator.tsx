@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import * as Linking from 'expo-linking';
+
+export const navigationRef = createNavigationContainerRef();
 
 import { useAuthStore } from '../store';
 import { COLORS } from '../constants';
@@ -16,8 +19,10 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 // Profile Setup Screens
 import BasicInfoScreen from '../screens/profile/BasicInfoScreen';
 import PhotosScreen from '../screens/profile/PhotosScreen';
+import PhotoVerificationScreen from '../screens/profile/PhotoVerificationScreen';
 import DealBreakersScreen from '../screens/profile/DealBreakersScreen';
 import BioScreen from '../screens/profile/BioScreen';
+import PreviewScreen from '../screens/profile/PreviewScreen';
 
 // Main Tab Screens
 import DiscoverScreen from '../screens/matching/DiscoverScreen';
@@ -70,8 +75,10 @@ const ProfileSetupNavigator = () => (
   >
     <ProfileSetupStack.Screen name="BasicInfo" component={BasicInfoScreen} />
     <ProfileSetupStack.Screen name="Photos" component={PhotosScreen} />
+    <ProfileSetupStack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
     <ProfileSetupStack.Screen name="DealBreakers" component={DealBreakersScreen} />
     <ProfileSetupStack.Screen name="Bio" component={BioScreen} />
+    <ProfileSetupStack.Screen name="Preview" component={PreviewScreen} />
   </ProfileSetupStack.Navigator>
 );
 
@@ -168,6 +175,13 @@ const MainNavigator = () => (
         animation: 'slide_from_right',
       }}
     />
+    <MainStack.Screen
+      name="PhotoVerification"
+      component={PhotoVerificationScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
   </MainStack.Navigator>
 );
 
@@ -177,6 +191,20 @@ const LoadingScreen = () => (
     <ActivityIndicator size="large" color={COLORS.primary} />
   </View>
 );
+
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: [Linking.createURL('/'), 'lastdatingapp://'],
+  config: {
+    screens: {
+      Main: {
+        screens: {
+          Chat: 'chat/:matchId',
+          ProfileDetail: 'profile/:userId',
+        },
+      },
+    },
+  },
+};
 
 // Root Navigator
 export const AppNavigator = () => {
@@ -191,7 +219,7 @@ export const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
           <RootStack.Screen name="Auth" component={AuthNavigator} />

@@ -64,6 +64,12 @@ CREATE TABLE profiles (
   main_photo_url TEXT,
   main_photo_expires_at TIMESTAMPTZ,
   photo_urls TEXT[] NOT NULL DEFAULT '{}',
+
+  -- Photo Verification
+  photo_verification_status TEXT NOT NULL DEFAULT 'unverified'
+    CHECK (photo_verification_status IN ('unverified', 'pending', 'verified', 'expired', 'rejected')),
+  photo_verified_at TIMESTAMPTZ,
+  last_verification_id UUID,
   
   -- Stats
   response_rate DOUBLE PRECISION CHECK (response_rate >= 0 AND response_rate <= 100),
@@ -161,10 +167,11 @@ CREATE TABLE message_limits (
 -- Venues Table
 CREATE TABLE venues (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  owner_id UUID REFERENCES venue_owners(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   description TEXT,
   category TEXT NOT NULL,
-  
+
   -- Location
   address TEXT NOT NULL,
   city TEXT NOT NULL,
@@ -172,23 +179,23 @@ CREATE TABLE venues (
   zip_code TEXT NOT NULL,
   lat DOUBLE PRECISION NOT NULL,
   lng DOUBLE PRECISION NOT NULL,
-  
+
   -- Partnership details
   partnership_slot INTEGER NOT NULL CHECK (partnership_slot IN (1, 2, 3)),
   payment_tier TEXT NOT NULL CHECK (payment_tier IN ('subscription', 'per_impression', 'monthly_package')),
   service_radius_miles INTEGER NOT NULL CHECK (service_radius_miles > 0),
-  
+
   -- Content
   photo_urls TEXT[] NOT NULL DEFAULT '{}',
   menu_url TEXT,
   website_url TEXT,
   phone TEXT,
-  
+
   -- Stats
   impression_count INTEGER NOT NULL DEFAULT 0,
   click_count INTEGER NOT NULL DEFAULT 0,
   date_count INTEGER NOT NULL DEFAULT 0,
-  
+
   -- Status
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -239,9 +246,59 @@ CREATE TABLE blocks (
   blocker_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   blocked_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
+
   UNIQUE(blocker_id, blocked_id),
   CHECK (blocker_id != blocked_id)
+);
+
+-- Venue Owners Table (for partner portal)
+CREATE TABLE venue_owners (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL UNIQUE,
+  business_name TEXT,
+  phone TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  onboarding_completed BOOLEAN NOT NULL DEFAULT false
+);
+
+-- Photo Verifications Table
+CREATE TABLE photo_verifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  photo_url TEXT NOT NULL,
+  photo_storage_path TEXT NOT NULL,
+  is_main_photo BOOLEAN NOT NULL DEFAULT false,
+
+  -- Overall result
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'processing', 'approved', 'rejected', 'needs_review')),
+  rejection_reason TEXT,
+
+  -- Face detection results (AWS Rekognition DetectFaces)
+  face_detected BOOLEAN,
+  face_count INTEGER,
+  face_confidence DOUBLE PRECISION,
+  face_details JSONB,
+
+  -- Content moderation results (AWS Rekognition DetectModerationLabels)
+  moderation_passed BOOLEAN,
+  moderation_labels JSONB,
+  moderation_max_confidence DOUBLE PRECISION,
+
+  -- Face comparison results (AWS Rekognition CompareFaces)
+  face_match_attempted BOOLEAN NOT NULL DEFAULT false,
+  face_match_passed BOOLEAN,
+  face_match_similarity DOUBLE PRECISION,
+  face_match_details JSONB,
+  compared_against_url TEXT,
+
+  -- Metadata
+  device_metadata JSONB,
+  processing_time_ms INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMPTZ
 );
 
 -- =====================================================
@@ -269,13 +326,24 @@ CREATE INDEX idx_messages_match ON messages(match_id, created_at DESC);
 CREATE INDEX idx_messages_sender ON messages(sender_id);
 CREATE INDEX idx_messages_unread ON messages(match_id, read_at) WHERE read_at IS NULL;
 
+-- Venue owners indexes
+CREATE INDEX idx_venue_owners_email ON venue_owners(email);
+
 -- Venues indexes
 CREATE INDEX idx_venues_location ON venues(lat, lng);
 CREATE INDEX idx_venues_category ON venues(category) WHERE is_active = true;
 CREATE INDEX idx_venues_active ON venues(is_active, partnership_slot);
+CREATE INDEX idx_venues_owner ON venues(owner_id) WHERE owner_id IS NOT NULL;
 
 -- Date suggestions indexes
 CREATE INDEX idx_date_suggestions_match ON date_suggestions(match_id, status);
+
+-- Photo verifications indexes
+CREATE INDEX idx_photo_verifications_user ON photo_verifications(user_id, created_at DESC);
+CREATE INDEX idx_photo_verifications_status ON photo_verifications(status)
+  WHERE status IN ('pending', 'processing', 'needs_review');
+CREATE INDEX idx_photo_verifications_user_main ON photo_verifications(user_id, is_main_photo, status)
+  WHERE is_main_photo = true AND status = 'approved';
 
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -289,10 +357,12 @@ ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
+ALTER TABLE venue_owners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE date_suggestions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profile_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE photo_verifications ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view active, non-deleted profiles"
@@ -376,10 +446,40 @@ CREATE POLICY "Users can manage their own message limits"
   ON message_limits FOR ALL
   USING (auth.uid() = user_id);
 
+-- Venue owners policies
+CREATE POLICY "Venue owners can view own record"
+  ON venue_owners FOR SELECT
+  USING (auth.uid() = id);
+
+CREATE POLICY "Venue owners can update own record"
+  ON venue_owners FOR UPDATE
+  USING (auth.uid() = id);
+
+CREATE POLICY "Venue owners can insert own record"
+  ON venue_owners FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
 -- Venues policies (public read)
 CREATE POLICY "Anyone can view active venues"
   ON venues FOR SELECT
   USING (is_active = true);
+
+-- Venue owners can also view their own inactive venues
+CREATE POLICY "Venue owners can view own venues"
+  ON venues FOR SELECT
+  USING (auth.uid() = owner_id);
+
+CREATE POLICY "Venue owners can insert their own venues"
+  ON venues FOR INSERT
+  WITH CHECK (auth.uid() = owner_id);
+
+CREATE POLICY "Venue owners can update their own venues"
+  ON venues FOR UPDATE
+  USING (auth.uid() = owner_id);
+
+CREATE POLICY "Venue owners can delete their own venues"
+  ON venues FOR DELETE
+  USING (auth.uid() = owner_id);
 
 -- Date suggestions policies
 CREATE POLICY "Users can view date suggestions for their matches"
@@ -440,6 +540,16 @@ CREATE POLICY "Users can view their own blocks"
 CREATE POLICY "Users can manage their own blocks"
   ON blocks FOR ALL
   USING (auth.uid() = blocker_id);
+
+-- Photo verifications policies
+-- Users can only view their own verification records
+CREATE POLICY "Users can view their own photo verifications"
+  ON photo_verifications FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Only service role (Edge Functions) can insert/update
+-- No INSERT/UPDATE policy for authenticated users;
+-- the verify-photo Edge Function uses SUPABASE_SERVICE_ROLE_KEY which bypasses RLS.
 
 -- =====================================================
 -- FUNCTIONS
@@ -631,6 +741,11 @@ CREATE TRIGGER update_profiles_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_venue_owners_updated_at
+  BEFORE UPDATE ON venue_owners
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 -- Trigger to create match when mutual like occurs
 CREATE OR REPLACE FUNCTION create_match_on_mutual_like()
 RETURNS TRIGGER AS $$
@@ -704,13 +819,59 @@ CREATE TRIGGER trigger_update_match_on_message
   FOR EACH ROW
   EXECUTE FUNCTION update_match_on_message();
 
+-- Push Tokens Table (for push notifications)
+CREATE TABLE push_tokens (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  expo_push_token TEXT NOT NULL,
+  device_id TEXT,
+  platform TEXT CHECK (platform IN ('ios', 'android')),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, expo_push_token)
+);
+
 -- =====================================================
--- INITIAL DATA (Optional)
+-- ADDITIONAL RPC FUNCTIONS
 -- =====================================================
 
--- You can add sample venues here if needed
--- INSERT INTO venues (name, category, address, city, state, zip_code, lat, lng, partnership_slot, payment_tier, service_radius_miles)
--- VALUES ('Sample Restaurant', 'italian', '123 Main St', 'San Francisco', 'CA', '94102', 37.7749, -122.4194, 1, 'subscription', 10);
+-- Increment match count (called by matchStore)
+CREATE OR REPLACE FUNCTION increment_match_count(user_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.profiles
+  SET match_count = match_count + 1
+  WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+-- Decrement match count (called by matchStore)
+CREATE OR REPLACE FUNCTION decrement_match_count(user_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.profiles
+  SET match_count = GREATEST(match_count - 1, 0)
+  WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+-- =====================================================
+-- ADDITIONAL INDEXES
+-- =====================================================
+
+-- Push tokens indexes
+CREATE INDEX idx_push_tokens_user ON push_tokens(user_id) WHERE is_active = true;
+
+-- =====================================================
+-- ADDITIONAL RLS POLICIES
+-- =====================================================
+
+ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own tokens"
+  ON push_tokens FOR ALL
+  USING (auth.uid() = user_id);
 
 -- =====================================================
 -- GRANTS (if needed for service role)

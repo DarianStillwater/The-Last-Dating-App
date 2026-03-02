@@ -9,6 +9,23 @@ export const APP_CONFIG = {
   MAX_PHOTOS: 10,
   MAX_BIO_LENGTH: 500,
   MAX_THINGS_TO_KNOW_LENGTH: 300,
+
+  // Photo verification thresholds
+  FACE_DETECTION_CONFIDENCE_MIN: 90,
+  MODERATION_CONFIDENCE_THRESHOLD: 75,
+  FACE_MATCH_SIMILARITY_MIN: 80,
+  FACE_MATCH_REVIEW_THRESHOLD: 60,
+  VERIFICATION_TIMEOUT_MS: 30000,
+};
+
+// User-facing rejection reason messages
+export const MODERATION_REJECTION_REASONS: Record<string, string> = {
+  no_face: 'No face was detected in the photo. Please take a clear selfie.',
+  multiple_faces: 'Multiple faces were detected. Please take a solo selfie.',
+  inappropriate_content: 'The photo was flagged for inappropriate content.',
+  face_mismatch: 'The photo does not match your existing profile photos.',
+  low_quality: 'The photo quality is too low. Please try again in better lighting.',
+  metadata_invalid: 'Photo must be taken with the front camera.',
 };
 
 // Color Theme

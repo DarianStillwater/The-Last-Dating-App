@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { registerForPushNotifications, saveTokenToDb, deactivateToken } from '../lib/notifications';
 import type { UserProfile } from '../types';
 
 interface AuthState {
@@ -56,9 +57,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           isProfileComplete,
         });
-        
+
         // Update last active
         get().updateLastActive();
+
+        // Register push notifications
+        registerForPushNotifications().then((token) => {
+          if (token && session.user.id) {
+            saveTokenToDb(session.user.id, token);
+          }
+        });
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
@@ -248,7 +256,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     try {
       set({ isLoading: true });
-      
+
+      // Deactivate push tokens before signing out
+      const { user } = get();
+      if (user?.id) {
+        await deactivateToken(user.id);
+      }
+
       await supabase.auth.signOut();
       
       set({

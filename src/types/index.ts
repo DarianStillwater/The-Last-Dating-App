@@ -101,7 +101,12 @@ export interface UserProfile {
   main_photo_url?: string;
   main_photo_expires_at?: string;
   photo_urls: string[];
-  
+
+  // Photo Verification
+  photo_verification_status: ProfileVerificationStatus;
+  photo_verified_at?: string;
+  last_verification_id?: string;
+
   // Stats
   response_rate?: number;
   match_count: number;
@@ -143,6 +148,78 @@ export interface UserPhoto {
   position: number;
   uploaded_at: string;
   expires_at?: string;
+}
+
+// Photo Verification Types
+export type PhotoVerificationStatus = 'pending' | 'processing' | 'approved' | 'rejected' | 'needs_review';
+export type ProfileVerificationStatus = 'unverified' | 'pending' | 'verified' | 'expired' | 'rejected';
+
+export interface ModerationLabel {
+  Name: string;
+  Confidence: number;
+  ParentName?: string;
+}
+
+export interface FaceBounds {
+  origin: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
+export interface PhotoDeviceMetadata {
+  camera_facing: 'front' | 'back';
+  captured_at: string;
+  capture_method: 'camera';
+  on_device_face_detected: boolean;
+  on_device_face_count: number;
+  on_device_face_bounds?: FaceBounds;
+}
+
+export interface PhotoVerification {
+  id: string;
+  user_id: string;
+  photo_url: string;
+  photo_storage_path: string;
+  is_main_photo: boolean;
+  status: PhotoVerificationStatus;
+  rejection_reason?: string;
+
+  // Face detection
+  face_detected?: boolean;
+  face_count?: number;
+  face_confidence?: number;
+
+  // Content moderation
+  moderation_passed?: boolean;
+  moderation_labels?: ModerationLabel[];
+  moderation_max_confidence?: number;
+
+  // Face comparison
+  face_match_attempted: boolean;
+  face_match_passed?: boolean;
+  face_match_similarity?: number;
+  compared_against_url?: string;
+
+  // Metadata
+  device_metadata?: PhotoDeviceMetadata;
+  processing_time_ms?: number;
+  created_at: string;
+  processed_at?: string;
+}
+
+export interface PhotoVerificationRequest {
+  photo_storage_path: string;
+  is_main_photo: boolean;
+  device_metadata: PhotoDeviceMetadata;
+}
+
+export interface PhotoVerificationResponse {
+  verification_id: string;
+  status: PhotoVerificationStatus;
+  rejection_reason?: string;
+  face_detected: boolean;
+  moderation_passed: boolean;
+  face_match_passed?: boolean;
+  face_match_similarity?: number;
 }
 
 // Match Types
@@ -332,6 +409,7 @@ export type AuthStackParamList = {
 export type ProfileSetupStackParamList = {
   BasicInfo: undefined;
   Photos: undefined;
+  PhotoVerification: { photoUri: string; isMain: boolean; deviceMetadata: PhotoDeviceMetadata };
   DealBreakers: undefined;
   Bio: undefined;
   Preview: undefined;
@@ -346,7 +424,7 @@ export type MainTabParamList = {
 
 export type DiscoverStackParamList = {
   DiscoverMain: undefined;
-  ProfileDetail: { userId: string };
+  ProfileDetail: { userId: string; profile?: UserProfile };
 };
 
 export type MatchesStackParamList = {
@@ -363,6 +441,7 @@ export type ProfileStackParamList = {
   EditDealBreakers: undefined;
   Settings: undefined;
   Reviews: undefined;
+  PhotoVerification: { photoUri: string; isMain: boolean; deviceMetadata: PhotoDeviceMetadata };
 };
 
 // Form Types
@@ -462,4 +541,16 @@ export interface VenueState {
   fetchVenues: (matchId: string, category?: VenueCategory) => Promise<void>;
   selectVenue: (venueId: string) => void;
   submitDateSuggestion: (matchId: string, venueId: string) => Promise<void>;
+}
+
+// Push Token Types
+export interface PushToken {
+  id: string;
+  user_id: string;
+  expo_push_token: string;
+  device_id?: string;
+  platform?: 'ios' | 'android';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }

@@ -215,31 +215,24 @@ export const useMatchStore = create<MatchState>((set, get) => ({
         .eq('liked', true)
         .single();
 
-      // If mutual like, create a match
+      // If mutual like, the DB trigger has already created the match and
+      // incremented match counts — just fetch it.
       if (mutualSwipe) {
+        const user1Id = swiperId < userId ? swiperId : userId;
+        const user2Id = swiperId < userId ? userId : swiperId;
+
         const { data: newMatch, error: matchError } = await supabase
           .from('matches')
-          .insert({
-            user1_id: swiperId < userId ? swiperId : userId,
-            user2_id: swiperId < userId ? userId : swiperId,
-            status: 'active',
-            total_messages: 0,
-            user1_message_count: 0,
-            user2_message_count: 0,
-            date_suggested: false,
-          })
           .select(`
             *,
             user1:profiles!matches_user1_id_fkey(*),
             user2:profiles!matches_user2_id_fkey(*)
           `)
+          .eq('user1_id', user1Id)
+          .eq('user2_id', user2Id)
           .single();
 
         if (matchError) throw matchError;
-
-        // Update match count for both users
-        await supabase.rpc('increment_match_count', { user_id: swiperId });
-        await supabase.rpc('increment_match_count', { user_id: userId });
 
         const match: Match = {
           ...newMatch,

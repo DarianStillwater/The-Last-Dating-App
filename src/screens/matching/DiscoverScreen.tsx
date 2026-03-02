@@ -14,13 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import SwipeCard from '../../components/cards/SwipeCard';
 import Button from '../../components/ui/Button';
-import { useMatchStore, useAuthStore } from '../../store';
+import { useMatchStore, useAuthStore, usePhotoVerificationStore } from '../../store';
 import { COLORS, APP_CONFIG } from '../../constants';
 
 const DiscoverScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { checkPhotoExpiration } = usePhotoVerificationStore();
   const {
     discoverProfiles,
     currentIndex,
@@ -78,6 +79,33 @@ const DiscoverScreen = () => {
 
   const currentProfile = discoverProfiles[currentIndex];
   const nextProfile = discoverProfiles[currentIndex + 1];
+  const { isExpired } = checkPhotoExpiration();
+  const verificationStatus = user?.photo_verification_status;
+
+  // Photo expired or unverified — block discovery
+  if (isExpired || verificationStatus === 'expired' || verificationStatus === 'rejected') {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Discover</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="camera-outline" size={64} color={COLORS.error} />
+          </View>
+          <Text style={styles.emptyTitle}>Photo check needed</Text>
+          <Text style={styles.emptySubtitle}>
+            Your photo has expired. Take a new selfie{'\n'}to continue discovering people.
+          </Text>
+          <Button
+            title="Update Photo"
+            onPress={() => navigation.navigate('Profile')}
+            style={{ marginTop: 24 }}
+          />
+        </View>
+      </View>
+    );
+  }
 
   // Match limit reached state
   if (hasReachedLimit) {

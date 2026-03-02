@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,70 +12,27 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '../../components/ui/Button';
-import { useProfileStore } from '../../store';
 import { COLORS, APP_CONFIG } from '../../constants';
 
 const BioScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
-  const { createProfile, updateDealBreakers, uploadMainPhoto, uploadGalleryPhoto, isLoading } = useProfileStore();
 
   const { profileData, dealBreakers } = route.params || {};
 
   const [bio, setBio] = useState('');
   const [thingsToKnow, setThingsToKnow] = useState('');
 
-  const handleFinish = async () => {
-    try {
-      // Upload main photo first
-      const { url: mainPhotoUrl, error: photoError } = await uploadMainPhoto(profileData.mainPhoto);
-      if (photoError) {
-        Alert.alert('Error', 'Failed to upload main photo. Please try again.');
-        return;
-      }
-
-      // Upload gallery photos
-      const galleryUrls: string[] = [];
-      for (let i = 0; i < profileData.galleryPhotos.length; i++) {
-        const { url } = await uploadGalleryPhoto(profileData.galleryPhotos[i], i);
-        if (url) galleryUrls.push(url);
-      }
-
-      // Create profile
-      const { error: profileError } = await createProfile({
-        first_name: profileData.first_name,
-        birth_date: profileData.birth_date,
-        gender: profileData.gender,
-        looking_for: profileData.looking_for,
-        height_cm: profileData.height_cm,
-        ethnicity: profileData.ethnicity,
-        religion: profileData.religion,
-        offspring: profileData.offspring,
-        smoker: profileData.smoker,
-        alcohol: profileData.alcohol,
-        drugs: profileData.drugs,
-        diet: profileData.diet,
-        occupation: profileData.occupation,
-        income: profileData.income,
+  const handleNext = () => {
+    navigation.navigate('Preview', {
+      profileData: {
+        ...profileData,
         bio: bio.trim() || null,
         things_to_know: thingsToKnow.trim() || null,
-        main_photo_url: mainPhotoUrl,
-        photo_urls: galleryUrls,
-      });
-
-      if (profileError) {
-        Alert.alert('Error', profileError);
-        return;
-      }
-
-      // Save deal breakers
-      await updateDealBreakers(dealBreakers);
-
-      // Profile is complete - navigation will automatically switch to main app
-    } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    }
+      },
+      dealBreakers,
+    });
   };
 
   return (
@@ -174,9 +130,8 @@ const BioScreen = () => {
           style={styles.backButton}
         />
         <Button
-          title="Complete Profile"
-          onPress={handleFinish}
-          loading={isLoading}
+          title="Preview Profile"
+          onPress={handleNext}
           style={styles.nextButton}
         />
       </View>

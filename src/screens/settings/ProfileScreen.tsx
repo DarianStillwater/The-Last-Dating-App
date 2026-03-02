@@ -11,14 +11,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAuthStore, useProfileStore } from '../../store';
+import { useAuthStore, useProfileStore, usePhotoVerificationStore } from '../../store';
 import { COLORS, calculateAge, cmToFeetInches } from '../../constants';
+import VerificationBadge from '../../components/ui/VerificationBadge';
+import type { ProfileVerificationStatus } from '../../types';
 
 const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { user, signOut } = useAuthStore();
   const { profile } = useProfileStore();
+
+  const { checkPhotoExpiration } = usePhotoVerificationStore();
 
   const currentUser = profile || user;
 
@@ -32,6 +36,8 @@ const ProfileScreen = () => {
 
   const age = calculateAge(currentUser.birth_date);
   const height = cmToFeetInches(currentUser.height_cm);
+  const verificationStatus: ProfileVerificationStatus = currentUser.photo_verification_status || 'unverified';
+  const { isExpired, daysRemaining, showReminder } = checkPhotoExpiration();
 
   const MenuItem = ({ icon, label, onPress, showBadge, danger }: any) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
@@ -62,12 +68,37 @@ const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Photo expiration banner */}
+      {(isExpired || showReminder) && (
+        <TouchableOpacity
+          style={[styles.expirationBanner, isExpired ? styles.bannerExpired : styles.bannerReminder]}
+          onPress={() => navigation.navigate('EditProfile')}
+        >
+          <Ionicons
+            name={isExpired ? 'warning' : 'time-outline'}
+            size={20}
+            color={isExpired ? COLORS.error : COLORS.warning}
+          />
+          <Text style={[styles.bannerText, { color: isExpired ? COLORS.error : COLORS.warning }]}>
+            {isExpired
+              ? 'Your photo has expired. Take a new selfie to stay visible.'
+              : `Your photo expires in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}. Update it soon.`}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={isExpired ? COLORS.error : COLORS.warning} />
+        </TouchableOpacity>
+      )}
+
       {/* Profile Card */}
       <View style={styles.profileCard}>
         <View style={styles.photoContainer}>
           <Image
             source={{ uri: currentUser.main_photo_url }}
             style={styles.mainPhoto}
+          />
+          <VerificationBadge
+            status={verificationStatus}
+            size="medium"
+            style={styles.verificationBadge}
           />
           <TouchableOpacity
             style={styles.editPhotoButton}
@@ -347,6 +378,31 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     textAlign: 'center',
     marginTop: 8,
+  },
+  expirationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  bannerExpired: {
+    backgroundColor: COLORS.error + '15',
+  },
+  bannerReminder: {
+    backgroundColor: COLORS.warning + '15',
+  },
+  bannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  verificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
   },
 });
 

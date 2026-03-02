@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -6,15 +6,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, useProfileStore } from '../../store';
 import { COLORS } from '../../constants';
 import Button from '../../components/ui/Button';
+import { getNotificationPermissionStatus, deactivateToken, reactivateToken } from '../../lib/notifications';
 
 const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { signOut } = useAuthStore();
+  const { signOut, user } = useAuthStore();
   const { profile, pauseProfile, deleteAccount } = useProfileStore();
 
   const [notifications, setNotifications] = useState(true);
   const [isPaused, setIsPaused] = useState(profile?.is_paused || false);
+
+  useEffect(() => {
+    getNotificationPermissionStatus().then(setNotifications);
+  }, []);
+
+  const handleNotificationToggle = async (value: boolean) => {
+    setNotifications(value);
+    if (!user?.id) return;
+    if (value) {
+      await reactivateToken(user.id);
+    } else {
+      await deactivateToken(user.id);
+    }
+  };
 
   const handlePause = async (value: boolean) => {
     setIsPaused(value);
@@ -83,7 +98,7 @@ const SettingsScreen = () => {
             icon="notifications-outline"
             label="Push Notifications"
             toggle={notifications}
-            onPress={() => setNotifications(!notifications)}
+            onPress={handleNotificationToggle}
           />
         </View>
 

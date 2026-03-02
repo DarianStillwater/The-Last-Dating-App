@@ -1,211 +1,166 @@
-# 💕 The Last Dating App
+# The Last Dating App
 
-A modern, feature-rich dating application built with React Native and Expo, designed to help people find meaningful connections.
+A modern dating app built with React Native, Expo SDK 54, and Supabase. Profile matching with deal breakers, real-time messaging, date venue suggestions, photo verification, and push notifications.
 
-## 🌟 Features
+## Features
 
-### Core Features
-- **Smart Profile Matching** - Advanced algorithm considers deal breakers and preferences
-- **Swipe Interface** - Intuitive Tinder-style card swiping
-- **Real-time Messaging** - Chat with your matches instantly
-- **Daily Message Limits** - Encourages meaningful conversations
-- **Date Suggestions** - Integrated venue recommendations
-- **Profile Reviews** - Community-driven profile accuracy verification
+- **Smart Matching** - Algorithm respects deal breakers, location, and preferences with a curated match limit
+- **Swipe Interface** - Card-based swiping with animated transitions
+- **Real-time Chat** - Instant messaging with daily message limits to encourage meaningful conversation
+- **Photo Verification** - AWS Rekognition-powered selfie verification via edge function
+- **Push Notifications** - Match and message alerts via Expo Push API
+- **Date Suggestions** - Venue recommendations with midpoint-based location logic
+- **Deep Linking** - `lastdatingapp://` scheme for chat and profile URLs
+- **Error Boundary** - Graceful crash recovery with retry
 
-### User Experience
-- **Comprehensive Profiles** - Detailed information about lifestyle, values, and preferences
-- **Deal Breakers** - Set your non-negotiables for better matches
-- **Photo Management** - Multiple photos with secure cloud storage
-- **Location-based Matching** - Find people nearby
-- **Match Limit** - Quality over quantity approach
+## Tech Stack
 
-## 🛠️ Tech Stack
+| Layer | Technology |
+|-------|-----------|
+| Framework | React Native 0.81 + Expo SDK 54 |
+| Language | TypeScript (strict) |
+| State | Zustand (6 stores) |
+| Navigation | React Navigation 7 (stack + tabs) |
+| Backend | Supabase (PostgreSQL, Auth, Realtime, Storage) |
+| Edge Functions | Deno (photo verification, push notifications) |
+| Notifications | expo-notifications + Expo Push API |
+| Testing | Jest + jest-expo + React Native Testing Library |
+| Build | EAS Build (development, preview, production profiles) |
 
-### Frontend
-- **React Native** - Cross-platform mobile development
-- **Expo SDK 54** - Simplified development workflow
-- **TypeScript** - Type-safe code
-- **Zustand** - Lightweight state management
-- **React Navigation** - Seamless navigation
-
-### Backend
-- **Supabase** - Backend-as-a-Service
-  - PostgreSQL database
-  - Real-time subscriptions
-  - Authentication
-  - Row Level Security (RLS)
-  - Cloud storage for photos
-
-### Key Libraries
-- `expo-linear-gradient` - Beautiful gradients
-- `expo-camera` - Photo capture
-- `expo-image-picker` - Photo selection
-- `date-fns` - Date formatting
-- `react-native-gesture-handler` - Smooth interactions
-- `react-native-reanimated` - Performant animations
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
-- Expo CLI
+- Expo CLI (`npx expo`)
 - iOS Simulator (Mac) or Android Emulator
-- Supabase account
+- Supabase project
 
-### Installation
+### Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/DarianStillwater/The-Last-Dating-App.git
-   cd The-Last-Dating-App
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-   
-   Create a `.env` file in the root directory:
-   ```env
-   EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Supabase URL and anon key
    ```
 
-4. **Set up Supabase database**
-   
-   - Go to your Supabase project
-   - Open the SQL Editor
-   - Copy and paste the contents of `supabase_schema.sql`
-   - Run the SQL script
+3. **Set up the database**
 
-5. **Start the development server**
+   Run `supabase_schema.sql` in your Supabase SQL Editor. This creates all 14 tables, RLS policies, functions, and triggers.
+
+4. **Start dev server**
    ```bash
    npx expo start
    ```
 
-6. **Run on your device**
-   - Scan the QR code with Expo Go app (iOS/Android)
-   - Or press `i` for iOS Simulator
-   - Or press `a` for Android Emulator
+### Edge Function Secrets
 
-## 📁 Project Structure
+The `verify-photo` edge function requires AWS Rekognition credentials set as Supabase Edge Function secrets:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+
+The notification edge functions (`send-match-notification`, `send-message-notification`) are deployed and triggered automatically by database webhooks.
+
+## Project Structure
 
 ```
-last-dating-app/
-├── src/
-│   ├── components/       # Reusable UI components
-│   │   ├── cards/       # SwipeCard component
-│   │   └── ui/          # Button, Input components
-│   ├── screens/         # App screens
-│   │   ├── auth/        # Authentication screens
-│   │   ├── matching/    # Discovery and profile screens
-│   │   ├── messaging/   # Chat and matches screens
-│   │   ├── profile/     # Profile setup screens
-│   │   ├── settings/    # Settings and edit screens
-│   │   └── venues/      # Date suggestion screens
-│   ├── navigation/      # Navigation configuration
-│   ├── store/           # Zustand state management
-│   ├── lib/             # Supabase client and utilities
-│   ├── types/           # TypeScript type definitions
-│   └── constants/       # App constants and configs
-├── assets/              # Images and static files
-├── supabase_schema.sql  # Complete database schema
-├── App.tsx              # Root component
-└── package.json         # Dependencies
+src/
+├── components/          # Reusable UI
+│   ├── cards/           #   SwipeCard
+│   ├── ui/              #   Button, Input, VerificationBadge
+│   └── ErrorBoundary.tsx
+├── screens/             # 18 screens across 6 feature areas
+│   ├── auth/            #   Welcome, SignIn, SignUp
+│   ├── matching/        #   Discover, ProfileDetail
+│   ├── messaging/       #   Matches, Messages, Chat
+│   ├── profile/         #   BasicInfo, Photos, PhotoVerification, DealBreakers, Bio, Preview
+│   ├── settings/        #   Profile, EditProfile, Settings
+│   └── venues/          #   DateSuggestion, VenueSelection
+├── store/               # Zustand stores
+│   ├── authStore.ts     #   Auth + push token registration
+│   ├── profileStore.ts  #   Profile CRUD + photo upload
+│   ├── matchStore.ts    #   Swipes, matching, daily profiles
+│   ├── messageStore.ts  #   Chat + real-time subscriptions
+│   ├── venueStore.ts    #   Venues + date suggestions
+│   └── photoVerificationStore.ts
+├── lib/                 # Supabase client, types, notifications
+├── navigation/          # AppNavigator with deep linking
+├── types/index.ts       # All TypeScript types (centralized)
+└── constants/index.ts   # Colors, APP_CONFIG, option lists, validators
+
+supabase/
+└── functions/
+    └── verify-photo/    # AWS Rekognition photo verification
+
+__tests__/               # Jest test suites
+├── components/          #   Button component tests
+├── store/               #   Match store logic tests
+└── utils/               #   Validator/utility tests
 ```
 
-## 🗄️ Database Schema
+## Database
 
-The app uses 11 main tables:
+14 tables with Row Level Security:
 
-1. **profiles** - User profiles and information
-2. **deal_breakers** - User matching preferences
-3. **swipes** - Like/pass actions
-4. **matches** - Mutual matches
-5. **messages** - Chat messages
-6. **message_limits** - Daily message tracking
-7. **venues** - Partner restaurants/locations
-8. **date_suggestions** - Proposed dates
-9. **profile_reviews** - Profile accuracy reviews
-10. **reports** - User reports
-11. **blocks** - Blocked users
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User profiles with verification status |
+| `deal_breakers` | Matching preferences |
+| `swipes` | Like/pass actions |
+| `matches` | Mutual matches (created by trigger) |
+| `messages` | Chat messages |
+| `message_limits` | Daily message tracking |
+| `venues` | Partner locations |
+| `venue_owners` | Venue ownership |
+| `date_suggestions` | Proposed dates |
+| `profile_reviews` | Profile accuracy reviews |
+| `reports` | User reports |
+| `blocks` | Blocked users |
+| `photo_verifications` | Verification attempts + results |
+| `push_tokens` | Expo push tokens per device |
 
-See `supabase_schema.sql` for the complete schema with RLS policies and functions.
+Key database functions:
+- `get_compatible_profiles` - Matching algorithm with deal breaker filtering
+- `calculate_distance` / `get_midpoint_coordinates` - Geo utilities
+- `check_mutual_match` / `create_match_on_mutual_like` - Trigger-based match creation
+- `increment_match_count` / `decrement_match_count` - Atomic counter updates
 
-## 🔒 Security
+## Scripts
 
-- **Row Level Security (RLS)** - All tables protected with RLS policies
-- **Secure Storage** - Credentials stored using Expo SecureStore
-- **Environment Variables** - Sensitive data in .env (not committed)
-- **Authentication** - Supabase Auth with email/password
+```bash
+npm start          # Start Expo dev server
+npm run ios        # iOS simulator
+npm run android    # Android emulator
+npm test           # Run Jest tests
+npm run test:watch # Run tests in watch mode
+```
 
-## 🎨 Design Philosophy
+## Building for Production
 
-- **Modern UI** - Clean, minimalist interface
-- **Smooth Animations** - Polished user experience
-- **Accessibility** - Designed for all users
-- **Performance** - Optimized for mobile devices
+EAS Build is configured with three profiles in `eas.json`:
 
-## 📱 App Configuration
+```bash
+eas build --profile development  # Dev client (internal distribution)
+eas build --profile preview      # Internal testing
+eas build --profile production   # App Store / Play Store
+```
 
-Key settings in `app.json`:
-- Expo SDK 54
-- Portrait orientation only
-- iOS and Android support
-- Custom splash screen and icons
+Before building, update `app.json` > `extra.eas.projectId` with your EAS project ID, and `eas.json` > `submit` with your Apple/Google credentials.
 
-## 🔧 Development
+## Security
 
-### Available Scripts
+- Row Level Security on all tables
+- Credentials stored via `expo-secure-store`
+- Environment variables via `.env` (gitignored)
+- Edge functions validate JWT tokens
+- Database functions use `SECURITY DEFINER` with locked `search_path`
 
-- `npm start` - Start Expo development server
-- `npm run android` - Run on Android
-- `npm run ios` - Run on iOS
-- `npm run web` - Run on web (limited support)
+## License
 
-### Key Configuration Files
-
-- `metro.config.js` - Metro bundler configuration
-- `tsconfig.json` - TypeScript configuration
-- `app.json` - Expo app configuration
-- `.gitignore` - Git ignore rules
-
-## 🚢 Deployment
-
-### Building for Production
-
-1. **iOS**
-   ```bash
-   eas build --platform ios
-   ```
-
-2. **Android**
-   ```bash
-   eas build --platform android
-   ```
-
-See [Expo EAS Build](https://docs.expo.dev/build/introduction/) for detailed instructions.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is private and proprietary.
-
-## 👤 Author
-
-**Darian Stillwater**
-
-## 🙏 Acknowledgments
-
-- Expo team for the amazing framework
-- Supabase for the backend infrastructure
-- React Native community for excellent libraries
-
----
-
-**Note:** Remember to add your Supabase credentials to `.env` before running the app!
+Private and proprietary.

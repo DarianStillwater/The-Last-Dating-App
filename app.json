@@ -1,27 +1,55 @@
 {
   "expo": {
-    "name": "last-dating-app",
+    "name": "The Last Dating App",
     "slug": "last-dating-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "lastdatingapp",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FF6B6B"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.lastdatingapp.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Take selfies for photo verification",
+        "NSPhotoLibraryUsageDescription": "Choose photos for your profile",
+        "NSLocationWhenInUseUsageDescription": "Find matches near you",
+        "NSFaceIDUsageDescription": "Secure login with Face ID"
+      }
     },
     "android": {
+      "package": "com.lastdatingapp.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "backgroundColor": "#FF6B6B"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-image-picker",
+      "expo-location",
+      "expo-notifications",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
     }
   }
 }
