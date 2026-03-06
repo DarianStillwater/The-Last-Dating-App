@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import HintBubble from '../../components/HintBubble';
 import { useAuthStore, useProfileStore, usePhotoVerificationStore } from '../../store';
 import { COLORS, calculateAge, cmToFeetInches } from '../../constants';
 import VerificationBadge from '../../components/ui/VerificationBadge';
@@ -161,6 +162,7 @@ const ProfileScreen = () => {
           onPress={() => navigation.navigate('Settings')}
         />
       </View>
+      <HintBubble hintKey="profile_photo_refresh" />
     </View>
   );
 };

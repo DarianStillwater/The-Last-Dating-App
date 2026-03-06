@@ -60,6 +60,28 @@ export const EMPTY_STATES = {
   },
 } as const;
 
+// Trust tiers based on community vouches and reviews
+export const TRUST_TIERS = {
+  0: { label: 'New Seedling', icon: 'leaf-outline', minVouches: 0, minReviews: 0 },
+  1: { label: 'Taking Root', icon: 'leaf', minVouches: 1, minReviews: 1 },
+  2: { label: 'Growing Strong', icon: 'flower-outline', minVouches: 3, minReviews: 3 },
+  3: { label: 'Deep Roots', icon: 'flower', minVouches: 5, minReviews: 5 },
+} as const;
+
+export const TRUST_COPY = {
+  reviewPrompt: {
+    title: 'Garden Check-In',
+    subtitle: 'How was your date? Help the community grow.',
+  },
+  vouchPrompt: {
+    title: 'Vouch for this person',
+    subtitle: 'Let others know they are who they say they are.',
+  },
+  trustBadge: {
+    label: 'Community Trust',
+  },
+} as const;
+
 export const PROFILE_STATS = {
   matches: 'Connections',
   responseRate: 'Growth Rate',
@@ -69,6 +91,38 @@ export const PROFILE_STATS = {
 export const SWIPE_LABELS = {
   like: 'BLOOM',
   nope: 'PASS',
+} as const;
+
+// Guided hints shown by PlantCompanion throughout the app
+export const COMPANION_HINTS = {
+  discover_swipe: {
+    message: "Swipe right if you feel a spark! Remember, you can only grow 10 plants at a time — choose wisely!",
+    delay: 2500,
+  },
+  garden_overview: {
+    message: "Welcome to your Garden! Each match is a plant that grows as you get to know each other.",
+    delay: 2000,
+  },
+  chat_limits: {
+    message: "You start with a few messages to break the ice. Keep chatting to unlock date suggestions!",
+    delay: 2500,
+  },
+  profile_photo_refresh: {
+    message: "Every month, you'll take a fresh selfie to keep your profile honest. It's how we keep things real!",
+    delay: 3000,
+  },
+  photos_verification: {
+    message: "Verified photos build trust. A quick selfie match proves you're really you!",
+    delay: 2500,
+  },
+  post_date_review: {
+    message: "After a date, share how it went! Your honest check-in helps the whole community stay safe.",
+    delay: 2000,
+  },
+  settings_privacy: {
+    message: "Verify your phone or link social accounts to boost your trust score and stand out!",
+    delay: 2500,
+  },
 } as const;
 
 export const ONBOARDING_COPY = {

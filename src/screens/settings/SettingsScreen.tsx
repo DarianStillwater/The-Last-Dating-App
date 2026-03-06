@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Linking } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore, useProfileStore } from '../../store';
+import HintBubble from '../../components/HintBubble';
+import { useAuthStore, useProfileStore, useTrustStore } from '../../store';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import { getNotificationPermissionStatus, deactivateToken, reactivateToken } from '../../lib/notifications';
@@ -14,12 +15,16 @@ const SettingsScreen = () => {
   const { signOut, user } = useAuthStore();
   const { profile, pauseProfile, deleteAccount } = useProfileStore();
 
+  const { ownSocialLinks, fetchSocialLinks, fetchOwnTrust } = useTrustStore();
+
   const [notifications, setNotifications] = useState(true);
   const [isPaused, setIsPaused] = useState(profile?.is_paused || false);
   const [expandedSection, setExpandedSection] = useState<string | null>('notifications');
 
   useEffect(() => {
     getNotificationPermissionStatus().then(setNotifications);
+    fetchSocialLinks();
+    fetchOwnTrust();
   }, []);
 
   const handleNotificationToggle = async (value: boolean) => {
@@ -154,6 +159,36 @@ const SettingsScreen = () => {
         <SectionHeader title="PRIVACY & SAFETY" sectionKey="privacy" />
         {expandedSection === 'privacy' && (
           <>
+            {!profile?.phone_verified && (
+              <SettingItem
+                icon="phone-portrait-outline"
+                label="Verify Phone Number"
+                onPress={() => (navigation as any).navigate('PhoneVerification')}
+              />
+            )}
+            {profile?.phone_verified && (
+              <SettingItem icon="checkmark-circle" label="Phone Verified" value="Verified" />
+            )}
+            <SettingItem
+              icon="logo-instagram"
+              label={ownSocialLinks.find(l => l.provider === 'instagram')?.verified ? 'Instagram Linked' : 'Link Instagram'}
+              value={ownSocialLinks.find(l => l.provider === 'instagram')?.verified ? 'Linked' : undefined}
+              onPress={() => {
+                if (!ownSocialLinks.find(l => l.provider === 'instagram')?.verified) {
+                  Alert.alert('Coming Soon', 'Instagram linking will be available in a future update.');
+                }
+              }}
+            />
+            <SettingItem
+              icon="logo-linkedin"
+              label={ownSocialLinks.find(l => l.provider === 'linkedin')?.verified ? 'LinkedIn Linked' : 'Link LinkedIn'}
+              value={ownSocialLinks.find(l => l.provider === 'linkedin')?.verified ? 'Linked' : undefined}
+              onPress={() => {
+                if (!ownSocialLinks.find(l => l.provider === 'linkedin')?.verified) {
+                  Alert.alert('Coming Soon', 'LinkedIn linking will be available in a future update.');
+                }
+              }}
+            />
             <SettingItem icon="shield-outline" label="Privacy Policy" onPress={() => Alert.alert('Privacy Policy', 'Our privacy policy will be available at launch. We never sell your data to third parties.')} />
             <SettingItem icon="document-text-outline" label="Terms of Service" onPress={() => Alert.alert('Terms of Service', 'Our terms of service will be available at launch. By using the app, you agree to treat all users with respect.')} />
             <SettingItem icon="help-circle-outline" label="Safety Tips" onPress={() => Alert.alert('Safety Tips', '• Always meet in a public place\n• Tell a friend where you\'re going\n• Trust your instincts\n• Never send money to someone you haven\'t met\n• Report suspicious behavior')} />
@@ -178,6 +213,7 @@ const SettingsScreen = () => {
       </View>
 
       <Text style={styles.version}>The Last Dating App v1.0.0</Text>
+      <HintBubble hintKey="settings_privacy" />
     </View>
   );
 };

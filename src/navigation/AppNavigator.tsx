@@ -37,6 +37,8 @@ import DateSuggestionScreen from '../screens/venues/DateSuggestionScreen';
 import VenueSelectionScreen from '../screens/venues/VenueSelectionScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
+import PostDateReviewScreen from '../screens/profile/PostDateReviewScreen';
+import PhoneVerificationScreen from '../screens/settings/PhoneVerificationScreen';
 
 import type {
   RootStackParamList,
@@ -200,6 +202,21 @@ const MainNavigator = () => (
     <MainStack.Screen
       name="PhotoVerification"
       component={PhotoVerificationScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
+    <MainStack.Screen
+      name="PostDateReview"
+      component={PostDateReviewScreen}
+      options={{
+        animation: 'slide_from_bottom',
+        presentation: 'modal',
+      }}
+    />
+    <MainStack.Screen
+      name="PhoneVerification"
+      component={PhoneVerificationScreen}
       options={{
         animation: 'slide_from_right',
       }}

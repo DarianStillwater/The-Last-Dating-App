@@ -5,13 +5,16 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../../lib/supabase';
+import { useTrustStore } from '../../store';
 import VerificationBadge from '../../components/ui/VerificationBadge';
+import TrustBadge from '../../components/ui/TrustBadge';
 import {
   COLORS,
+  TRUST_CONFIG,
   calculateAge,
   cmToFeetInches,
 } from '../../constants';
-import type { UserProfile } from '../../types';
+import type { UserProfile, ReviewSummary, SocialLink } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHOTO_HEIGHT = 320;
@@ -26,11 +29,20 @@ const ProfileDetailScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number>(0);
+  const [vouchCount, setVouchCount] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const { fetchUserTrust } = useTrustStore();
 
   const flatListRef = useRef<FlatList<string>>(null);
 
   useEffect(() => {
     fetchProfile();
+    fetchUserTrust(userId).then((data) => {
+      setVouchCount(data.vouchCount);
+      setReviewCount(data.reviewSummary?.total_reviews || 0);
+      setSocialLinks(data.socialLinks);
+    });
   }, [userId]);
 
   const fetchProfile = async () => {
@@ -177,6 +189,28 @@ const ProfileDetailScreen: React.FC = () => {
             size="small"
             showLabel
           />
+          <TrustBadge
+            vouchCount={vouchCount}
+            reviewCount={reviewCount}
+            size="small"
+            showLabel
+          />
+          {profile.phone_verified && (
+            <View style={styles.infoChip}>
+              <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+              <Text style={styles.infoChipText}>Phone</Text>
+            </View>
+          )}
+          {socialLinks.filter(l => l.verified).map((link) => (
+            <View key={link.provider} style={styles.infoChip}>
+              <Ionicons
+                name={link.provider === 'instagram' ? 'logo-instagram' : 'logo-linkedin'}
+                size={14}
+                color={COLORS.textSecondary}
+              />
+              <Text style={styles.infoChipText}>{link.provider === 'instagram' ? 'IG' : 'LinkedIn'}</Text>
+            </View>
+          ))}
         </View>
 
         {profile.bio ? (

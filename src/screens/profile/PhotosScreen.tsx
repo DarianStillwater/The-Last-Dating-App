@@ -24,6 +24,7 @@ try {
 }
 import { Ionicons } from '@expo/vector-icons';
 
+import HintBubble from '../../components/HintBubble';
 import Button from '../../components/ui/Button';
 import { COLORS, APP_CONFIG } from '../../constants';
 import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
@@ -359,6 +360,7 @@ const PhotosScreen = () => {
           </View>
         </View>
       </Modal>
+      <HintBubble hintKey="photos_verification" />
     </View>
   );
 };

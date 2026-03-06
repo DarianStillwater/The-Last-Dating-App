@@ -228,16 +228,25 @@ export const REPORT_REASONS = [
   { value: 'other', label: 'Other' },
 ];
 
-// Review Fields
-export const REVIEW_FIELDS = [
-  { value: 'height', label: 'Height' },
-  { value: 'age', label: 'Age' },
-  { value: 'ethnicity', label: 'Ethnicity' },
-  { value: 'photos', label: 'Photos' },
-  { value: 'occupation', label: 'Occupation' },
-  { value: 'religion', label: 'Religion' },
-  { value: 'general', label: 'General' },
-];
+// Accuracy Review Options
+export const ACCURACY_OPTIONS = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'mostly', label: 'Mostly' },
+  { value: 'no', label: 'No' },
+] as const;
+
+// Trust & Safety Config
+export const TRUST_CONFIG = {
+  REVIEW_ELIGIBLE_HOURS: 24,
+  MIN_VOUCHES_FOR_TIER_1: 1,
+  MIN_VOUCHES_FOR_TIER_2: 3,
+  MIN_VOUCHES_FOR_TIER_3: 5,
+  REPORTS_FOR_VISIBILITY_REDUCE: 3,
+  REPORTS_FOR_SUSPENSION: 5,
+  SUSPENSION_HOURS: 72,
+  TRUST_SCORE_LOW_THRESHOLD: 0.2,
+  MIN_REVIEWS_FOR_DISPLAY: 3,
+};
 
 // Default Deal Breaker Values
 export const DEFAULT_DEAL_BREAKERS = {

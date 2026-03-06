@@ -13,6 +13,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 
+import HintBubble from '../../components/HintBubble';
 import { useMatchStore } from '../../store';
 import { COLORS, calculateAge } from '../../constants';
 import { GROWTH_STAGES } from '../../theme/plantMetaphors';
@@ -159,6 +160,7 @@ const MatchesScreen = () => {
         ListEmptyComponent={matches.length === 0 ? <EmptyState /> : null}
         contentContainerStyle={styles.listContent}
       />
+      <HintBubble hintKey="garden_overview" />
     </View>
   );
 };

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import HintBubble from '../../components/HintBubble';
 import SwipeCard from '../../components/cards/SwipeCard';
 import Button from '../../components/ui/Button';
 import SproutPop from '../../components/SproutPop';
@@ -231,6 +232,7 @@ const DiscoverScreen = () => {
           isFirst={true}
         />
       </View>
+      <HintBubble hintKey="discover_swipe" />
     </View>
   );
 };

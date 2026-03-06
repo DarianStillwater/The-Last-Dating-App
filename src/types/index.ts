@@ -110,6 +110,13 @@ export interface UserProfile {
   // Stats
   response_rate?: number;
   match_count: number;
+
+  // Trust & Safety
+  phone_verified: boolean;
+  phone_verified_at?: string;
+  visibility_modifier: number;
+  is_suspended: boolean;
+  suspended_until?: string;
 }
 
 // Deal Breakers - what user requires in a match
@@ -246,6 +253,7 @@ export interface Match {
   date_suggested: boolean;
   date_suggestion_sent_at?: string;
   venue_selected?: string;
+  date_accepted_at?: string;
 }
 
 // Swipe/Like Types
@@ -343,27 +351,84 @@ export interface DateSuggestion {
   responded_at?: string;
 }
 
-// Review/Notes Types
-export type ReviewField = 
-  | 'height' 
-  | 'age' 
-  | 'ethnicity' 
-  | 'photos' 
-  | 'occupation' 
-  | 'religion'
-  | 'general';
+// Trust & Safety Types
+export type AccuracyRating = 'yes' | 'mostly' | 'no';
+export type SocialProvider = 'instagram' | 'linkedin';
+export type EnforcementActionType = 'visibility_reduced' | 'visibility_restored' | 'suspended' | 'unsuspended' | 'warned' | 'banned';
 
 export interface ProfileReview {
   id: string;
   reviewer_id: string;
   reviewed_id: string;
-  field: ReviewField;
-  is_accurate: boolean;
-  note?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  match_id: string;
+  photos_accurate: AccuracyRating;
+  bio_honest: AccuracyRating;
+  felt_safe: AccuracyRating;
   created_at: string;
-  reviewed_at?: string;
 }
+
+export interface ReviewSummary {
+  total_reviews: number;
+  photos_score: number;
+  bio_score: number;
+  safety_score: number;
+  overall_accuracy: number;
+}
+
+export interface Vouch {
+  id: string;
+  voucher_id: string;
+  vouchee_id: string;
+  match_id: string;
+  created_at: string;
+}
+
+export interface SocialLink {
+  id: string;
+  user_id: string;
+  provider: SocialProvider;
+  provider_user_id?: string;
+  provider_username?: string;
+  verified: boolean;
+  linked_at: string;
+}
+
+export interface TrustScore {
+  user_id: string;
+  photo_verification_score: number;
+  phone_verified_score: number;
+  social_linked_score: number;
+  vouch_score: number;
+  review_score: number;
+  behavior_score: number;
+  report_score: number;
+  composite_score: number;
+  ghost_rate: number;
+  response_rate: number;
+  last_calculated_at: string;
+}
+
+export interface EnforcementAction {
+  id: string;
+  user_id: string;
+  action_type: EnforcementActionType;
+  reason: string;
+  triggered_by: 'automated' | 'admin';
+  metadata?: Record<string, any>;
+  created_at: string;
+  expires_at?: string;
+  is_active: boolean;
+}
+
+export interface TrustTier {
+  label: string;
+  icon: string;
+  minVouches: number;
+  minReviews: number;
+}
+
+// Hint Types
+export type HintKey = 'discover_swipe' | 'garden_overview' | 'chat_limits' | 'profile_photo_refresh' | 'photos_verification' | 'post_date_review' | 'settings_privacy';
 
 // Report/Block Types
 export type ReportReason = 
@@ -442,6 +507,8 @@ export type ProfileStackParamList = {
   Settings: undefined;
   Reviews: undefined;
   PhotoVerification: { photoUri: string; isMain: boolean; deviceMetadata: PhotoDeviceMetadata };
+  PostDateReview: { matchId: string; reviewedUserId: string };
+  PhoneVerification: undefined;
 };
 
 // Form Types

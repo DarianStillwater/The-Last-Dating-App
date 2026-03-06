@@ -17,8 +17,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
-import { useMessageStore, useMatchStore, useAuthStore } from '../../store';
-import { COLORS, APP_CONFIG, calculateAge } from '../../constants';
+import HintBubble from '../../components/HintBubble';
+import { useMessageStore, useMatchStore, useAuthStore, useTrustStore } from '../../store';
+import { COLORS, APP_CONFIG, TRUST_CONFIG, calculateAge } from '../../constants';
+import { TRUST_COPY } from '../../theme/plantMetaphors';
 import type { Message } from '../../types';
 
 const ChatScreen = () => {
@@ -43,6 +45,9 @@ const ChatScreen = () => {
 
   const [inputText, setInputText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(true);
+  const [hasVouched, setHasVouched] = useState(false);
+  const { hasReviewedMatch, hasVouchedFor, submitVouch } = useTrustStore();
 
   const match = matches.find((m) => m.id === matchId);
   const otherUser = match?.other_user;
@@ -52,6 +57,13 @@ const ChatScreen = () => {
     const unsubscribe = subscribeToMessages(matchId);
     return unsubscribe;
   }, [matchId]);
+
+  useEffect(() => {
+    if (match?.date_accepted_at && otherUser) {
+      hasReviewedMatch(matchId).then((reviewed) => setHasReviewed(reviewed));
+      hasVouchedFor(otherUser.id).then((vouched) => setHasVouched(vouched));
+    }
+  }, [matchId, match?.date_accepted_at]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -209,6 +221,21 @@ const ChatScreen = () => {
             <Ionicons name="heart-dislike-outline" size={20} color={COLORS.text} />
             <Text style={styles.optionText}>Unmatch</Text>
           </TouchableOpacity>
+          {match?.date_accepted_at && !hasVouched && (
+            <TouchableOpacity style={styles.optionItem} onPress={async () => {
+              setShowOptions(false);
+              const { error } = await submitVouch(matchId, otherUser!.id);
+              if (error) {
+                Alert.alert('Error', error);
+              } else {
+                setHasVouched(true);
+                Alert.alert('Vouched!', `You vouched for ${otherUser?.first_name}.`);
+              }
+            }}>
+              <Ionicons name="heart-circle-outline" size={20} color={COLORS.primary} />
+              <Text style={styles.optionText}>Vouch</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.optionItem} onPress={handleBlock}>
             <Ionicons name="ban-outline" size={20} color={COLORS.error} />
             <Text style={[styles.optionText, { color: COLORS.error }]}>Block</Text>
@@ -218,6 +245,26 @@ const ChatScreen = () => {
             <Text style={[styles.optionText, { color: COLORS.error }]}>Report</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* Review banner - show after date accepted + 24h, if not yet reviewed */}
+      {match?.date_accepted_at && !hasReviewed && (() => {
+        const hoursElapsed = (Date.now() - new Date(match.date_accepted_at!).getTime()) / (1000 * 60 * 60);
+        return hoursElapsed >= TRUST_CONFIG.REVIEW_ELIGIBLE_HOURS;
+      })() && (
+        <TouchableOpacity
+          style={styles.reviewBanner}
+          onPress={() => navigation.navigate('PostDateReview', { matchId, reviewedUserId: otherUser!.id })}
+        >
+          <View style={styles.dateBannerContent}>
+            <Ionicons name="leaf" size={24} color={COLORS.primary} />
+            <View style={styles.dateBannerText}>
+              <Text style={styles.reviewBannerTitle}>{TRUST_COPY.reviewPrompt.title}</Text>
+              <Text style={styles.reviewBannerSubtitle}>{TRUST_COPY.reviewPrompt.subtitle}</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
       )}
 
       {/* Date suggestion banner */}
@@ -282,6 +329,7 @@ const ChatScreen = () => {
           )}
         </TouchableOpacity>
       </View>
+      <HintBubble hintKey="chat_limits" />
     </KeyboardAvoidingView>
   );
 };
@@ -382,6 +430,25 @@ const styles = StyleSheet.create({
   dateBannerSubtitle: {
     fontSize: 13,
     color: COLORS.secondaryDark,
+  },
+  reviewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.primaryLight + '15',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
+  },
+  reviewBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  reviewBannerSubtitle: {
+    fontSize: 13,
+    color: COLORS.primaryDark,
   },
   messagesList: {
     paddingHorizontal: 16,

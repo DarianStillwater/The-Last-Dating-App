@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
+import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import AppNavigator, { navigationRef } from './src/navigation/AppNavigator';
 import AnimatedSplash from './src/components/AnimatedSplash';
@@ -53,6 +54,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <ReducedMotionConfig mode={ReduceMotion.Never} />
       {fontsLoaded && !showSplash && (
         <ErrorBoundary>
           <SafeAreaProvider>
