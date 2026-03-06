@@ -17,6 +17,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store';
 import { COLORS } from '../../constants';
+import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const SignInScreen = () => {
   const navigation = useNavigation<any>();
@@ -89,8 +90,8 @@ const SignInScreen = () => {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+          <Text style={styles.title}>{ONBOARDING_COPY.signIn.title}</Text>
+          <Text style={styles.subtitle}>{ONBOARDING_COPY.signIn.subtitle}</Text>
         </View>
 
         {/* Form */}
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,

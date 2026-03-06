@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+import { uploadAsync } from 'expo-file-system/legacy';
 import { Database } from './database.types';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL';
@@ -76,6 +77,44 @@ export const uploadImage = async (
     return publicUrl;
   } catch (error) {
     console.error('Error uploading image:', error);
+    return null;
+  }
+};
+
+// Upload a local file URI (camera/picker) to Supabase Storage.
+// Uses expo-file-system which reliably handles file:// URIs on both iOS and Android.
+export const uploadPhotoFromUri = async (
+  bucket: string,
+  path: string,
+  uri: string,
+): Promise<string | null> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${path}`;
+
+    const result = await uploadAsync(uploadUrl, uri, {
+      httpMethod: 'POST',
+      uploadType: 0, // FileSystemUploadType.BINARY_CONTENT
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true',
+      },
+    });
+
+    if (result.status < 200 || result.status >= 300) {
+      throw new Error(`Upload failed with status ${result.status}: ${result.body}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading photo:', error);
     return null;
   }
 };

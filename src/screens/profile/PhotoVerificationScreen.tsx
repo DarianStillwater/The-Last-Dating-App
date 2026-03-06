@@ -1,150 +1,214 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   ActivityIndicator,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { addDays } from 'date-fns';
 
 import Button from '../../components/ui/Button';
-import { COLORS, MODERATION_REJECTION_REASONS } from '../../constants';
-import { usePhotoVerificationStore } from '../../store';
-import type { PhotoDeviceMetadata, PhotoVerificationResponse } from '../../types';
+import { COLORS, APP_CONFIG } from '../../constants';
+import { usePhotoVerificationStore, useAuthStore, useProfileStore } from '../../store';
+import { uploadPhotoFromUri, supabase } from '../../lib/supabase';
+import type { PhotoDeviceMetadata } from '../../types';
 
-type VerificationState = 'uploading' | 'verifying' | 'approved' | 'rejected' | 'needs_review' | 'error';
+type VerificationState = 'camera' | 'uploading' | 'done' | 'error';
 
 const PhotoVerificationScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const cameraRef = useRef<any>(null);
 
-  const { photoUri, isMain, deviceMetadata, profileData } = route.params as {
-    photoUri: string;
-    isMain: boolean;
-    deviceMetadata: PhotoDeviceMetadata;
+  // Params are optional — screen can be navigated to with or without them
+  const params = route.params as {
+    photoUri?: string;
+    isMain?: boolean;
+    deviceMetadata?: PhotoDeviceMetadata;
     profileData?: Record<string, unknown>;
-  };
+  } | undefined;
 
-  const { uploadAndVerifyPhoto, isUploading, isVerifying, error } = usePhotoVerificationStore();
+  const hasIncomingPhoto = !!params?.photoUri;
 
-  const [state, setState] = useState<VerificationState>('uploading');
-  const [result, setResult] = useState<PhotoVerificationResponse | null>(null);
+  const { uploadAndVerifyPhoto, error } = usePhotoVerificationStore();
 
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [state, setState] = useState<VerificationState>(hasIncomingPhoto ? 'uploading' : 'camera');
+  const [capturedUri, setCapturedUri] = useState<string | null>(params?.photoUri || null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // If opened with an existing photo URI, verify immediately
   useEffect(() => {
-    runVerification();
+    if (hasIncomingPhoto) {
+      runVerification(params!.photoUri!, params?.deviceMetadata);
+    }
   }, []);
 
+  // Request camera permission if needed
   useEffect(() => {
-    if (isUploading) setState('uploading');
-    else if (isVerifying) setState('verifying');
-  }, [isUploading, isVerifying]);
+    if (state === 'camera' && !cameraPermission?.granted) {
+      requestCameraPermission();
+    }
+  }, [state]);
 
-  const runVerification = async () => {
-    const { result: verifyResult, error: verifyError } = await uploadAndVerifyPhoto(
-      photoUri,
-      isMain,
-      deviceMetadata,
-    );
+  const takePhoto = async () => {
+    if (!cameraRef.current) return;
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      setCapturedUri(photo.uri);
+      setState('uploading');
+      await uploadNewMainPhoto(photo.uri);
+    } catch {
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  };
 
-    if (verifyError && !verifyResult) {
+  const uploadNewMainPhoto = async (uri: string) => {
+    try {
+      const userId = useAuthStore.getState().session?.user?.id;
+      if (!userId) {
+        setErrorMessage('Not authenticated.');
+        setState('error');
+        return;
+      }
+
+      const url = await uploadPhotoFromUri(
+        'profile-photos',
+        `${userId}/main_${Date.now()}.jpg`,
+        uri,
+      );
+
+      if (!url) {
+        setErrorMessage('Failed to upload photo. Please try again.');
+        setState('error');
+        return;
+      }
+
+      const expiresAt = addDays(new Date(), APP_CONFIG.PHOTO_EXPIRATION_DAYS).toISOString();
+      const { error: updateError } = await (supabase as any)
+        .from('profiles')
+        .update({ main_photo_url: url, main_photo_expires_at: expiresAt })
+        .eq('id', userId);
+
+      if (updateError) {
+        setErrorMessage(updateError.message);
+        setState('error');
+        return;
+      }
+
+      // Refresh the local profile store so photo expiration check reflects the new photo
+      await useProfileStore.getState().fetchProfile();
+
+      setState('done');
+
+      // Fire off verification silently in the background
+      const metadata: PhotoDeviceMetadata = {
+        camera_facing: 'front',
+        captured_at: new Date().toISOString(),
+        capture_method: 'camera',
+        on_device_face_detected: true,
+        on_device_face_count: 1,
+      };
+      uploadAndVerifyPhoto(uri, true, metadata).catch(() => {});
+    } catch (e: any) {
+      setErrorMessage(e?.message || 'Something went wrong.');
       setState('error');
-      return;
     }
+  };
 
-    if (verifyResult) {
-      setResult(verifyResult);
-      setState(verifyResult.status === 'approved' ? 'approved'
-        : verifyResult.status === 'needs_review' ? 'needs_review'
-        : 'rejected');
-    }
+  // Legacy: verify a photo that was passed as a param (not used during setup anymore)
+  const runVerification = async (uri: string, deviceMetadata?: PhotoDeviceMetadata) => {
+    const metadata = deviceMetadata || {
+      camera_facing: 'front' as const,
+      captured_at: new Date().toISOString(),
+      capture_method: 'camera' as const,
+      on_device_face_detected: true,
+      on_device_face_count: 1,
+    };
+
+    await uploadAndVerifyPhoto(uri, params?.isMain ?? true, metadata);
+    setState('done');
   };
 
   const handleContinue = () => {
-    if (profileData) {
-      // During profile setup — go to DealBreakers
-      navigation.navigate('DealBreakers', { profileData });
+    if (params?.profileData) {
+      navigation.navigate('DealBreakers', { profileData: params.profileData });
     } else {
-      // From settings — go back
       navigation.goBack();
     }
   };
 
-  const handleRetry = () => {
-    navigation.goBack();
-  };
+  // Camera view — when navigated without a photo
+  if (state === 'camera') {
+    if (!cameraPermission?.granted) {
+      return (
+        <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+          <Ionicons name="camera-outline" size={64} color={COLORS.textSecondary} />
+          <Text style={styles.statusTitle}>Camera Permission Required</Text>
+          <Text style={styles.statusSubtitle}>Please enable camera access to update your photo.</Text>
+          <Button title="Go Back" onPress={() => navigation.goBack()} style={{ marginTop: 24 }} />
+        </View>
+      );
+    }
 
-  const getRejectionMessage = () => {
-    const reason = result?.rejection_reason || error || '';
-    return MODERATION_REJECTION_REASONS[reason] || reason || 'Your photo could not be verified. Please try again.';
-  };
+    return (
+      <View style={styles.cameraContainer}>
+        <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+        <View style={[styles.cameraOverlay, { paddingTop: insets.top }]}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="close" size={28} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text style={styles.cameraTitle}>Take a new selfie</Text>
+        </View>
+        <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 32 }]}>
+          <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
+            <View style={styles.captureInner} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16 }]}>
       {/* Photo preview */}
-      <View style={styles.photoContainer}>
-        <Image source={{ uri: photoUri }} style={styles.photo} />
-        {(state === 'uploading' || state === 'verifying') && (
-          <View style={styles.photoOverlay}>
-            <ActivityIndicator size="large" color="#FFF" />
-          </View>
-        )}
-      </View>
+      {capturedUri && (
+        <View style={styles.photoContainer}>
+          <Image source={{ uri: capturedUri }} style={styles.photo} />
+          {state === 'uploading' && (
+            <View style={styles.photoOverlay}>
+              <ActivityIndicator size="large" color={COLORS.surface} />
+            </View>
+          )}
+        </View>
+      )}
 
-      {/* Status section */}
+      {/* Status */}
       <View style={styles.statusContainer}>
         {state === 'uploading' && (
           <>
             <ActivityIndicator size="small" color={COLORS.primary} style={styles.spinner} />
-            <Text style={styles.statusTitle}>Uploading your photo...</Text>
+            <Text style={styles.statusTitle}>Saving your photo...</Text>
             <Text style={styles.statusSubtitle}>This will only take a moment.</Text>
           </>
         )}
 
-        {state === 'verifying' && (
-          <>
-            <ActivityIndicator size="small" color={COLORS.primary} style={styles.spinner} />
-            <Text style={styles.statusTitle}>Verifying your photo...</Text>
-            <Text style={styles.statusSubtitle}>
-              We're checking that everything looks good.
-            </Text>
-          </>
-        )}
-
-        {state === 'approved' && (
+        {state === 'done' && (
           <>
             <View style={[styles.iconCircle, { backgroundColor: COLORS.success + '20' }]}>
               <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
             </View>
-            <Text style={styles.statusTitle}>Photo verified!</Text>
+            <Text style={styles.statusTitle}>Photo updated!</Text>
             <Text style={styles.statusSubtitle}>
-              Your photo has been approved. It will be visible for 30 days.
-            </Text>
-          </>
-        )}
-
-        {state === 'rejected' && (
-          <>
-            <View style={[styles.iconCircle, { backgroundColor: COLORS.error + '20' }]}>
-              <Ionicons name="close-circle" size={48} color={COLORS.error} />
-            </View>
-            <Text style={styles.statusTitle}>Photo not accepted</Text>
-            <Text style={styles.statusSubtitle}>{getRejectionMessage()}</Text>
-          </>
-        )}
-
-        {state === 'needs_review' && (
-          <>
-            <View style={[styles.iconCircle, { backgroundColor: COLORS.warning + '20' }]}>
-              <Ionicons name="time" size={48} color={COLORS.warning} />
-            </View>
-            <Text style={styles.statusTitle}>Under review</Text>
-            <Text style={styles.statusSubtitle}>
-              Your photo is being reviewed by our team. This usually takes less than 24 hours.
-              You can continue using the app in the meantime.
+              Your photo has been saved and will be visible for 30 days.
             </Text>
           </>
         )}
@@ -156,7 +220,7 @@ const PhotoVerificationScreen = () => {
             </View>
             <Text style={styles.statusTitle}>Something went wrong</Text>
             <Text style={styles.statusSubtitle}>
-              {error || 'We couldn\'t verify your photo. Please try again.'}
+              {errorMessage || error || "We couldn't save your photo. Please try again."}
             </Text>
           </>
         )}
@@ -164,16 +228,11 @@ const PhotoVerificationScreen = () => {
 
       {/* Actions */}
       <View style={styles.footer}>
-        {state === 'approved' && (
+        {state === 'done' && (
           <Button title="Continue" onPress={handleContinue} style={styles.button} />
         )}
-
-        {state === 'needs_review' && (
-          <Button title="Continue" onPress={handleContinue} style={styles.button} />
-        )}
-
-        {(state === 'rejected' || state === 'error') && (
-          <Button title="Try Again" onPress={handleRetry} style={styles.button} />
+        {state === 'error' && (
+          <Button title="Try Again" onPress={() => setState('camera')} style={styles.button} />
         )}
       </View>
     </View>
@@ -185,6 +244,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     paddingHorizontal: 24,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: COLORS.text,
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraTitle: {
+    color: COLORS.surface,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  cameraControls: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  captureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.primary,
   },
   photoContainer: {
     width: '60%',
@@ -200,13 +315,14 @@ const styles = StyleSheet.create({
   },
   photoOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statusContainer: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   spinner: {
     marginBottom: 16,

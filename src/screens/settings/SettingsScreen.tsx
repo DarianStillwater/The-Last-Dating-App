@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, useProfileStore } from '../../store';
+import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
 import Button from '../../components/ui/Button';
 import { getNotificationPermissionStatus, deactivateToken, reactivateToken } from '../../lib/notifications';
@@ -118,7 +119,28 @@ const SettingsScreen = () => {
           <SettingItem
             icon="lock-closed-outline"
             label="Change Password"
-            onPress={() => {}}
+            onPress={() => {
+              Alert.alert(
+                'Reset Password',
+                'We\'ll send a password reset link to your email.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Send Link',
+                    onPress: async () => {
+                      if (profile?.email) {
+                        const { error } = await supabase.auth.resetPasswordForEmail(profile.email);
+                        if (error) {
+                          Alert.alert('Error', error.message);
+                        } else {
+                          Alert.alert('Sent', 'Check your email for a password reset link.');
+                        }
+                      }
+                    },
+                  },
+                ],
+              );
+            }}
           />
         </View>
 
@@ -127,17 +149,20 @@ const SettingsScreen = () => {
           <SettingItem
             icon="shield-outline"
             label="Privacy Policy"
-            onPress={() => {}}
+            onPress={() => Alert.alert('Privacy Policy', 'Our privacy policy will be available at launch. We never sell your data to third parties.')}
           />
           <SettingItem
             icon="document-text-outline"
             label="Terms of Service"
-            onPress={() => {}}
+            onPress={() => Alert.alert('Terms of Service', 'Our terms of service will be available at launch. By using the app, you agree to treat all users with respect.')}
           />
           <SettingItem
             icon="help-circle-outline"
             label="Safety Tips"
-            onPress={() => {}}
+            onPress={() => Alert.alert(
+              'Safety Tips',
+              '• Always meet in a public place\n• Tell a friend where you\'re going\n• Trust your instincts\n• Never send money to someone you haven\'t met\n• Report suspicious behavior',
+            )}
           />
         </View>
 
@@ -146,12 +171,12 @@ const SettingsScreen = () => {
           <SettingItem
             icon="chatbox-outline"
             label="Contact Us"
-            onPress={() => {}}
+            onPress={() => Linking.openURL('mailto:support@lastdatingapp.com')}
           />
           <SettingItem
             icon="bug-outline"
             label="Report a Problem"
-            onPress={() => {}}
+            onPress={() => Linking.openURL('mailto:support@lastdatingapp.com?subject=Bug%20Report')}
           />
         </View>
 

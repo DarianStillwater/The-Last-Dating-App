@@ -104,10 +104,10 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         .eq('id', matchId)
         .single()).data;
 
-      const shouldShow = match && 
+      const shouldShow = match &&
         match.total_messages >= MESSAGES_FOR_DATE_SUGGESTION &&
-        match.user1_message_count >= 5 &&
-        match.user2_message_count >= 5 &&
+        match.user1_message_count > 0 &&
+        match.user2_message_count > 0 &&
         !match.date_suggested;
 
       set({ 
@@ -214,10 +214,10 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         .eq('id', matchId)
         .single()).data;
 
-      const shouldShow = updatedMatch && 
+      const shouldShow = updatedMatch &&
         updatedMatch.total_messages >= MESSAGES_FOR_DATE_SUGGESTION &&
-        updatedMatch.user1_message_count >= 5 &&
-        updatedMatch.user2_message_count >= 5 &&
+        updatedMatch.user1_message_count > 0 &&
+        updatedMatch.user2_message_count > 0 &&
         !updatedMatch.date_suggested;
 
       set({ shouldShowDateSuggestion: shouldShow });

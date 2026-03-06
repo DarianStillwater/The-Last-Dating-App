@@ -19,7 +19,7 @@ import type { ProfileVerificationStatus } from '../../types';
 const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { user, signOut } = useAuthStore();
+  const { user } = useAuthStore();
   const { profile } = useProfileStore();
 
   const { checkPhotoExpiration } = usePhotoVerificationStore();
@@ -59,7 +59,7 @@ const ProfileScreen = () => {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>My Planter</Text>
         <TouchableOpacity
           style={styles.settingsButton}
           onPress={() => navigation.navigate('Settings')}
@@ -72,7 +72,7 @@ const ProfileScreen = () => {
       {(isExpired || showReminder) && (
         <TouchableOpacity
           style={[styles.expirationBanner, isExpired ? styles.bannerExpired : styles.bannerReminder]}
-          onPress={() => navigation.navigate('EditProfile')}
+          onPress={() => navigation.navigate('PhotoVerification')}
         >
           <Ionicons
             name={isExpired ? 'warning' : 'time-outline'}
@@ -91,10 +91,12 @@ const ProfileScreen = () => {
       {/* Profile Card */}
       <View style={styles.profileCard}>
         <View style={styles.photoContainer}>
-          <Image
-            source={{ uri: currentUser.main_photo_url }}
-            style={styles.mainPhoto}
-          />
+          <TouchableOpacity onPress={() => navigation.navigate('EditPhotos', { editMode: true })}>
+            <Image
+              source={{ uri: currentUser.main_photo_url }}
+              style={styles.mainPhoto}
+            />
+          </TouchableOpacity>
           <VerificationBadge
             status={verificationStatus}
             size="medium"
@@ -102,9 +104,9 @@ const ProfileScreen = () => {
           />
           <TouchableOpacity
             style={styles.editPhotoButton}
-            onPress={() => navigation.navigate('EditProfile')}
+            onPress={() => navigation.navigate('EditPhotos', { editMode: true })}
           >
-            <Ionicons name="camera" size={16} color="#FFF" />
+            <Ionicons name="leaf" size={16} color={COLORS.surface} />
           </TouchableOpacity>
         </View>
 
@@ -130,14 +132,14 @@ const ProfileScreen = () => {
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{currentUser.match_count || 0}</Text>
-          <Text style={styles.statLabel}>Matches</Text>
+          <Text style={styles.statLabel}>Connections</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statValue}>
             {currentUser.response_rate ? `${Math.round(currentUser.response_rate * 100)}%` : '--'}
           </Text>
-          <Text style={styles.statLabel}>Response Rate</Text>
+          <Text style={styles.statLabel}>Growth Rate</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
@@ -157,40 +159,20 @@ const ProfileScreen = () => {
         <MenuItem
           icon="images-outline"
           label="Manage Photos"
-          onPress={() => navigation.navigate('EditProfile')}
+          onPress={() => navigation.navigate('EditPhotos', { editMode: true })}
         />
         <MenuItem
           icon="options-outline"
           label="Deal Breakers"
-          onPress={() => navigation.navigate('EditProfile')}
-        />
-      </View>
-
-      <View style={styles.menuSection}>
-        <Text style={styles.menuSectionTitle}>Account</Text>
-        <MenuItem
-          icon="shield-checkmark-outline"
-          label="Privacy & Safety"
-          onPress={() => navigation.navigate('Settings')}
-        />
-        <MenuItem
-          icon="notifications-outline"
-          label="Notifications"
-          onPress={() => navigation.navigate('Settings')}
-        />
-        <MenuItem
-          icon="help-circle-outline"
-          label="Help & Support"
-          onPress={() => {}}
+          onPress={() => navigation.navigate('EditDealBreakers', { editMode: true })}
         />
       </View>
 
       <View style={styles.menuSection}>
         <MenuItem
-          icon="log-out-outline"
-          label="Sign Out"
-          onPress={signOut}
-          danger
+          icon="settings-outline"
+          label="Settings"
+          onPress={() => navigation.navigate('Settings')}
         />
       </View>
 
@@ -233,7 +215,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,

@@ -409,7 +409,6 @@ export type AuthStackParamList = {
 export type ProfileSetupStackParamList = {
   BasicInfo: undefined;
   Photos: undefined;
-  PhotoVerification: { photoUri: string; isMain: boolean; deviceMetadata: PhotoDeviceMetadata };
   DealBreakers: undefined;
   Bio: undefined;
   Preview: undefined;
@@ -437,8 +436,8 @@ export type MatchesStackParamList = {
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   EditProfile: undefined;
-  EditPhotos: undefined;
-  EditDealBreakers: undefined;
+  EditPhotos: { editMode: boolean };
+  EditDealBreakers: { editMode: boolean };
   Settings: undefined;
   Reviews: undefined;
   PhotoVerification: { photoUri: string; isMain: boolean; deviceMetadata: PhotoDeviceMetadata };

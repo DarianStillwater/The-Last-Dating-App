@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import SwipeCard from '../../components/cards/SwipeCard';
 import Button from '../../components/ui/Button';
+import SproutPop from '../../components/SproutPop';
 import { useMatchStore, useAuthStore, usePhotoVerificationStore } from '../../store';
 import { COLORS, APP_CONFIG } from '../../constants';
 
 const DiscoverScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const [showSprout, setShowSprout] = useState(false);
   const { user } = useAuthStore();
   const { checkPhotoExpiration } = usePhotoVerificationStore();
   const {
@@ -54,8 +56,9 @@ const DiscoverScreen = () => {
     }
 
     if (match) {
+      setShowSprout(true);
       Alert.alert(
-        '🎉 It\'s a Match!',
+        'It\'s a Match!',
         `You and ${match.other_user?.first_name} liked each other!`,
         [
           { text: 'Keep Swiping', style: 'cancel' },
@@ -87,7 +90,7 @@ const DiscoverScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <Text style={styles.headerTitle}>Explore</Text>
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
@@ -99,7 +102,7 @@ const DiscoverScreen = () => {
           </Text>
           <Button
             title="Update Photo"
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => navigation.navigate('PhotoVerification')}
             style={{ marginTop: 24 }}
           />
         </View>
@@ -112,16 +115,15 @@ const DiscoverScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <Text style={styles.headerTitle}>Explore</Text>
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="heart" size={64} color={COLORS.primary} />
+            <Ionicons name="leaf" size={64} color={COLORS.primary} />
           </View>
-          <Text style={styles.emptyTitle}>Match limit reached!</Text>
+          <Text style={styles.emptyTitle}>Your garden is full!</Text>
           <Text style={styles.emptySubtitle}>
-            You have {APP_CONFIG.MAX_MATCHES} active matches.{'\n'}
-            Unmatch someone to keep swiping.
+            Nurture your current connections{'\n'}before adding more
           </Text>
           <Button
             title="View Matches"
@@ -138,11 +140,11 @@ const DiscoverScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <Text style={styles.headerTitle}>Explore</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Finding your matches...</Text>
+          <Text style={styles.loadingText}>Finding new people...</Text>
         </View>
       </View>
     );
@@ -153,7 +155,7 @@ const DiscoverScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <Text style={styles.headerTitle}>Explore</Text>
         </View>
         <ScrollView
           contentContainerStyle={styles.emptyScrollContainer}
@@ -169,9 +171,9 @@ const DiscoverScreen = () => {
             <View style={styles.emptyIcon}>
               <Ionicons name="compass-outline" size={64} color={COLORS.textSecondary} />
             </View>
-            <Text style={styles.emptyTitle}>No more profiles</Text>
+            <Text style={styles.emptyTitle}>No new people nearby</Text>
             <Text style={styles.emptySubtitle}>
-              Check back later or adjust your{'\n'}deal breakers to see more people.
+              Check back soon for new{'\n'}people to discover
             </Text>
             <Button
               title="Refresh"
@@ -189,14 +191,21 @@ const DiscoverScreen = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discover</Text>
+        <Text style={styles.headerTitle}>Explore</Text>
         <View style={styles.matchCounter}>
-          <Ionicons name="heart" size={16} color={COLORS.primary} />
+          <Ionicons name="leaf-outline" size={16} color={COLORS.primary} />
           <Text style={styles.matchCountText}>
             {matches.length}/{APP_CONFIG.MAX_MATCHES}
           </Text>
         </View>
       </View>
+
+      {/* Sprout animation on match */}
+      {showSprout && (
+        <View style={styles.sproutOverlay}>
+          <SproutPop visible={showSprout} onComplete={() => setShowSprout(false)} />
+        </View>
+      )}
 
       {/* Card Stack */}
       <View style={styles.cardContainer}>
@@ -303,6 +312,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  sproutOverlay: {
+    position: 'absolute',
+    top: '40%',
+    alignSelf: 'center',
+    zIndex: 100,
   },
 });
 

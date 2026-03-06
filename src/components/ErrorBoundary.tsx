@@ -31,13 +31,13 @@ class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
-          <Ionicons name="warning-outline" size={64} color={COLORS.error} />
-          <Text style={styles.title}>Something went wrong</Text>
+          <Ionicons name="rainy-outline" size={64} color={COLORS.error} />
+          <Text style={styles.title}>Oh no, something wilted</Text>
           <Text style={styles.message}>
             The app encountered an unexpected error. Please try again.
           </Text>
           <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={styles.buttonText}>Try Watering Again</Text>
           </TouchableOpacity>
         </View>
       );
@@ -72,10 +72,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 32,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: COLORS.surface,
     fontSize: 16,
     fontWeight: '600',
   },

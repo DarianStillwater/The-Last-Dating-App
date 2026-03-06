@@ -17,6 +17,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store';
 import { COLORS } from '../../constants';
+import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const SignUpScreen = () => {
   const navigation = useNavigation<any>();
@@ -97,8 +98,8 @@ const SignUpScreen = () => {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.title}>Create account</Text>
-          <Text style={styles.subtitle}>Start your journey to meaningful connections</Text>
+          <Text style={styles.title}>{ONBOARDING_COPY.signUp.title}</Text>
+          <Text style={styles.subtitle}>{ONBOARDING_COPY.signUp.subtitle}</Text>
         </View>
 
         <View style={styles.form}>
@@ -138,7 +139,7 @@ const SignUpScreen = () => {
           />
 
           <Button
-            title="Create Account"
+            title={ONBOARDING_COPY.signUp.button}
             onPress={handleSignUp}
             loading={isLoading}
             fullWidth
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,

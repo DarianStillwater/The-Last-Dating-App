@@ -182,17 +182,17 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
         {isFirst && (
           <>
             <Animated.View style={[styles.stamp, styles.likeStamp, { opacity: likeOpacity }]}>
-              <Text style={[styles.stampText, styles.likeText]}>LIKE</Text>
+              <Text style={[styles.stampText, styles.likeText]}>BLOOM</Text>
             </Animated.View>
             <Animated.View style={[styles.stamp, styles.nopeStamp, { opacity: nopeOpacity }]}>
-              <Text style={[styles.stampText, styles.nopeText]}>NOPE</Text>
+              <Text style={[styles.stampText, styles.nopeText]}>PASS</Text>
             </Animated.View>
           </>
         )}
 
         {/* Gradient overlay */}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          colors={['transparent', 'rgba(27,67,50,0.85)']}
           style={styles.gradient}
         />
 
@@ -205,12 +205,12 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
 
           <View style={styles.detailsRow}>
             <View style={styles.detail}>
-              <Ionicons name="resize-outline" size={16} color="#FFF" />
+              <Ionicons name="resize-outline" size={16} color={COLORS.surface} />
               <Text style={styles.detailText}>{cmToFeetInches(profile.height_cm)}</Text>
             </View>
             {profile.occupation && (
               <View style={styles.detail}>
-                <Ionicons name="briefcase-outline" size={16} color="#FFF" />
+                <Ionicons name="briefcase-outline" size={16} color={COLORS.surface} />
                 <Text style={styles.detailText}>{profile.occupation}</Text>
               </View>
             )}
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     height: SCREEN_HEIGHT * 0.7,
     borderRadius: 24,
     backgroundColor: COLORS.surface,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
@@ -292,11 +292,11 @@ const styles = StyleSheet.create({
   photoIndicator: {
     flex: 1,
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.35)',
     borderRadius: 2,
   },
   photoIndicatorActive: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.surface,
   },
   stamp: {
     position: 'absolute',
@@ -345,13 +345,13 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFF',
+    color: COLORS.surface,
     marginRight: 8,
   },
   age: {
     fontSize: 26,
     fontWeight: '400',
-    color: '#FFF',
+    color: COLORS.surface,
   },
   detailsRow: {
     flexDirection: 'row',
@@ -365,11 +365,11 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#FFF',
+    color: COLORS.surface,
   },
   bio: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 20,
   },
   actions: {
@@ -385,10 +385,10 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

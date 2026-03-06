@@ -18,16 +18,16 @@ const DateSuggestionScreen = () => {
         <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pick a Date Spot</Text>
+        <Text style={styles.headerTitle}>Suggest a Date</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="restaurant" size={64} color={COLORS.secondary} />
+          <Ionicons name="flower" size={64} color={COLORS.secondary} />
         </View>
         
-        <Text style={styles.title}>Time for a date! 🎉</Text>
+        <Text style={styles.title}>Time to Bloom Together!</Text>
         <Text style={styles.subtitle}>
           You've been chatting with your match.{'\n'}
           Now let's help you pick the perfect spot.
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,

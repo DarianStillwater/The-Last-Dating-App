@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,13 +14,17 @@ import Slider from '@react-native-community/slider';
 
 import Button from '../../components/ui/Button';
 import { COLORS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DIET_OPTIONS, DISTANCE_OPTIONS, cmToFeetInches, AGE_RANGE, HEIGHT_RANGE } from '../../constants';
+import { useProfileStore } from '../../store';
+import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const DealBreakersScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
 
+  const editMode = !!route.params?.editMode;
   const profileData = route.params?.profileData || {};
+  const { dealBreakers, fetchDealBreakers, updateDealBreakers } = useProfileStore();
 
   const [minAge, setMinAge] = useState(21);
   const [maxAge, setMaxAge] = useState(40);
@@ -32,6 +37,28 @@ const DealBreakersScreen = () => {
   const [smoker, setSmoker] = useState<string[]>([]);
   const [alcohol, setAlcohol] = useState<string[]>([]);
   const [diet, setDiet] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // In edit mode, load existing deal breakers and pre-populate state
+  useEffect(() => {
+    if (editMode) {
+      fetchDealBreakers().then(() => {
+        const db = useProfileStore.getState().dealBreakers;
+        if (!db) return;
+        if (db.min_age) setMinAge(db.min_age);
+        if (db.max_age) setMaxAge(db.max_age);
+        if (db.min_height) setMinHeight(db.min_height);
+        if (db.max_height) setMaxHeight(db.max_height);
+        if (db.max_distance) setMaxDistance(db.max_distance);
+        if (db.acceptable_ethnicities) setEthnicities(db.acceptable_ethnicities);
+        if (db.acceptable_religions) setReligions(db.acceptable_religions);
+        if (db.acceptable_offspring) setOffspring(db.acceptable_offspring);
+        if (db.acceptable_smoker) setSmoker(db.acceptable_smoker);
+        if (db.acceptable_alcohol) setAlcohol(db.acceptable_alcohol);
+        if (db.acceptable_diets) setDiet(db.acceptable_diets);
+      });
+    }
+  }, [editMode]);
 
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
@@ -81,41 +108,64 @@ const DealBreakersScreen = () => {
     );
   };
 
+  const currentSelections = {
+    min_age: minAge,
+    max_age: maxAge,
+    min_height: minHeight,
+    max_height: maxHeight,
+    max_distance: maxDistance,
+    acceptable_ethnicities: ethnicities.length > 0 ? ethnicities : null,
+    acceptable_religions: religions.length > 0 ? religions : null,
+    acceptable_offspring: offspring.length > 0 ? offspring : null,
+    acceptable_smoker: smoker.length > 0 ? smoker : null,
+    acceptable_alcohol: alcohol.length > 0 ? alcohol : null,
+    acceptable_diets: diet.length > 0 ? diet : null,
+  };
+
   const handleNext = () => {
-    navigation.navigate('Bio', {
-      profileData,
-      dealBreakers: {
-        min_age: minAge,
-        max_age: maxAge,
-        min_height: minHeight,
-        max_height: maxHeight,
-        max_distance: maxDistance,
-        acceptable_ethnicities: ethnicities.length > 0 ? ethnicities : null,
-        acceptable_religions: religions.length > 0 ? religions : null,
-        acceptable_offspring: offspring.length > 0 ? offspring : null,
-        acceptable_smoker: smoker.length > 0 ? smoker : null,
-        acceptable_alcohol: alcohol.length > 0 ? alcohol : null,
-        acceptable_diets: diet.length > 0 ? diet : null,
-      },
-    });
+    navigation.navigate('Bio', { profileData, dealBreakers: currentSelections });
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { error } = await updateDealBreakers(currentSelections);
+    setIsSaving(false);
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      navigation.goBack();
+    }
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Progress bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '75%' }]} />
+      {/* Progress bar — setup only */}
+      {!editMode && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: '75%' }]} />
+          </View>
+          <Text style={styles.progressText}>Step 3 of 4</Text>
         </View>
-        <Text style={styles.progressText}>Step 3 of 4</Text>
-      </View>
+      )}
+
+      {/* Edit mode header */}
+      {editMode && (
+        <View style={styles.editHeader}>
+          <TouchableOpacity style={styles.editBackButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.editHeaderTitle}>Deal Breakers</Text>
+          <View style={{ width: 40 }} />
+        </View>
+      )}
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Your deal breakers</Text>
+        <Text style={styles.title}>{ONBOARDING_COPY.dealBreakers.title}</Text>
         <Text style={styles.subtitle}>
           We only show you profiles that match your criteria, and you'll only appear to people whose criteria you match.
         </Text>
@@ -323,16 +373,19 @@ const DealBreakersScreen = () => {
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        {!editMode && (
+          <Button
+            title="Back"
+            onPress={() => navigation.goBack()}
+            variant="outline"
+            style={styles.backButton}
+          />
+        )}
         <Button
-          title="Back"
-          onPress={() => navigation.goBack()}
-          variant="outline"
-          style={styles.backButton}
-        />
-        <Button
-          title="Next: Add Bio"
-          onPress={handleNext}
-          style={styles.nextButton}
+          title={editMode ? 'Save Changes' : 'Next: Add Bio'}
+          onPress={editMode ? handleSave : handleNext}
+          loading={isSaving}
+          style={editMode ? styles.fullButton : styles.nextButton}
         />
       </View>
     </View>
@@ -483,6 +536,31 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     flex: 2,
+  },
+  fullButton: {
+    flex: 1,
+  },
+  editHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  editBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 });
 

@@ -28,27 +28,27 @@ export const MODERATION_REJECTION_REASONS: Record<string, string> = {
   metadata_invalid: 'Photo must be taken with the front camera.',
 };
 
-// Color Theme
+// Color Theme - Plant / Growth palette
 export const COLORS = {
-  primary: '#FF6B6B',
-  primaryDark: '#E55A5A',
-  primaryLight: '#FF8F8F',
-  secondary: '#4ECDC4',
-  secondaryDark: '#3DBDB5',
-  accent: '#FFE66D',
-  background: '#FAFAFA',
+  primary: '#40916C',
+  primaryDark: '#2D6A4F',
+  primaryLight: '#74C69D',
+  secondary: '#F4ACB7',
+  secondaryDark: '#E08C98',
+  accent: '#FFD166',
+  background: '#F0FFF4',
   surface: '#FFFFFF',
-  surfaceVariant: '#F5F5F5',
-  text: '#1A1A2E',
-  textSecondary: '#6B7280',
-  textLight: '#9CA3AF',
-  border: '#E5E7EB',
-  error: '#EF4444',
-  success: '#10B981',
-  warning: '#F59E0B',
-  info: '#3B82F6',
-  overlay: 'rgba(0, 0, 0, 0.5)',
-  cardShadow: 'rgba(0, 0, 0, 0.1)',
+  surfaceVariant: '#E8F5E9',
+  text: '#1B4332',
+  textSecondary: '#52796F',
+  textLight: '#95B8A3',
+  border: '#C8E6C9',
+  error: '#D32F2F',
+  success: '#2E7D32',
+  warning: '#F9A825',
+  info: '#0288D1',
+  overlay: 'rgba(27, 67, 50, 0.5)',
+  cardShadow: 'rgba(45, 106, 79, 0.1)',
 };
 
 // Gender Options

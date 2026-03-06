@@ -14,7 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import PlantCompanion from '../../components/PlantCompanion';
+import GrowingVine from '../../components/GrowingVine';
 import { COLORS, GENDER_OPTIONS, LOOKING_FOR_OPTIONS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DRUGS_OPTIONS, DIET_OPTIONS, INCOME_OPTIONS, HEIGHT_RANGE, cmToFeetInches } from '../../constants';
+import { PLANTER_STAGES } from '../../theme/plantMetaphors';
 
 const BasicInfoScreen = () => {
   const navigation = useNavigation<any>();
@@ -242,12 +245,15 @@ const BasicInfoScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Progress bar */}
+      {/* Plant companion + progress vine */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(step / totalSteps) * 100}%` }]} />
+        <View style={styles.companionRow}>
+          <PlantCompanion growthStage={step} />
+          <View style={styles.progressInfo}>
+            <Text style={styles.progressText}>Step {step}: {PLANTER_STAGES[step as keyof typeof PLANTER_STAGES].label}</Text>
+          </View>
         </View>
-        <Text style={styles.progressText}>Step {step} of {totalSteps}</Text>
+        <GrowingVine progress={step / totalSteps} totalSteps={totalSteps} currentStep={step} />
       </View>
 
       <ScrollView
@@ -289,23 +295,21 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingTop: 8,
   },
-  progressBar: {
-    height: 4,
-    backgroundColor: COLORS.border,
-    borderRadius: 2,
+  companionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
+  progressInfo: {
+    marginLeft: 12,
+    flex: 1,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,

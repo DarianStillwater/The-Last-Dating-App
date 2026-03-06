@@ -227,9 +227,9 @@ const ChatScreen = () => {
           onPress={() => navigation.navigate('DateSuggestion', { matchId })}
         >
           <View style={styles.dateBannerContent}>
-            <Ionicons name="restaurant" size={24} color={COLORS.secondary} />
+            <Ionicons name="flower" size={24} color={COLORS.secondary} />
             <View style={styles.dateBannerText}>
-              <Text style={styles.dateBannerTitle}>Time for a date! 🎉</Text>
+              <Text style={styles.dateBannerTitle}>Time to Bloom Together!</Text>
               <Text style={styles.dateBannerSubtitle}>Tap to pick a venue together</Text>
             </View>
           </View>
@@ -276,9 +276,9 @@ const ChatScreen = () => {
           disabled={!inputText.trim() || !canSend || isSending}
         >
           {isSending ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={COLORS.surface} />
           ) : (
-            <Ionicons name="send" size={20} color="#FFF" />
+            <Ionicons name="send" size={20} color={COLORS.surface} />
           )}
         </TouchableOpacity>
       </View>
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 12,
     paddingVertical: 8,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   messageTextMe: {
-    color: '#FFF',
+    color: COLORS.surface,
   },
   limitBanner: {
     flexDirection: 'row',

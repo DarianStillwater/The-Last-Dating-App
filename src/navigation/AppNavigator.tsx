@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import * as Linking from 'expo-linking';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -75,7 +74,6 @@ const ProfileSetupNavigator = () => (
   >
     <ProfileSetupStack.Screen name="BasicInfo" component={BasicInfoScreen} />
     <ProfileSetupStack.Screen name="Photos" component={PhotosScreen} />
-    <ProfileSetupStack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
     <ProfileSetupStack.Screen name="DealBreakers" component={DealBreakersScreen} />
     <ProfileSetupStack.Screen name="Bio" component={BioScreen} />
     <ProfileSetupStack.Screen name="Preview" component={PreviewScreen} />
@@ -97,16 +95,16 @@ const TabNavigator = () => (
 
         switch (route.name) {
           case 'Discover':
-            iconName = focused ? 'compass' : 'compass-outline';
+            iconName = focused ? 'leaf' : 'leaf-outline';
             break;
           case 'Matches':
-            iconName = focused ? 'heart' : 'heart-outline';
+            iconName = focused ? 'flower' : 'flower-outline';
             break;
           case 'Messages':
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
             break;
           case 'Profile':
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = focused ? 'rose' : 'rose-outline';
             break;
           default:
             iconName = 'help-outline';
@@ -116,10 +114,10 @@ const TabNavigator = () => (
       },
     })}
   >
-    <Tab.Screen name="Discover" component={DiscoverScreen} />
-    <Tab.Screen name="Matches" component={MatchesScreen} />
-    <Tab.Screen name="Messages" component={MessagesScreen} />
-    <Tab.Screen name="Profile" component={ProfileScreen} />
+    <Tab.Screen name="Discover" component={DiscoverScreen} options={{ tabBarLabel: 'Explore' }} />
+    <Tab.Screen name="Matches" component={MatchesScreen} options={{ tabBarLabel: 'Garden' }} />
+    <Tab.Screen name="Messages" component={MessagesScreen} options={{ tabBarLabel: 'Messages' }} />
+    <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'My Planter' }} />
   </Tab.Navigator>
 );
 
@@ -169,6 +167,22 @@ const MainNavigator = () => (
       }}
     />
     <MainStack.Screen
+      name="EditPhotos"
+      component={PhotosScreen}
+      options={{
+        animation: 'slide_from_right',
+        headerShown: false,
+      }}
+    />
+    <MainStack.Screen
+      name="EditDealBreakers"
+      component={DealBreakersScreen}
+      options={{
+        animation: 'slide_from_right',
+        headerShown: false,
+      }}
+    />
+    <MainStack.Screen
       name="Settings"
       component={SettingsScreen}
       options={{
@@ -193,7 +207,7 @@ const LoadingScreen = () => (
 );
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: [Linking.createURL('/'), 'lastdatingapp://'],
+  prefixes: ['lastdatingapp://'],
   config: {
     screens: {
       Main: {
@@ -244,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderTopWidth: 0,
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,

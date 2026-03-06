@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, uploadImage } from '../lib/supabase';
+import { supabase, uploadPhotoFromUri } from '../lib/supabase';
 import type {
   PhotoVerification,
   PhotoVerificationResponse,
@@ -44,11 +44,9 @@ export const usePhotoVerificationStore = create<PhotoVerificationState>((set, ge
       // Phase 1: Upload to storage
       set({ isUploading: true, isVerifying: false, error: null, currentVerification: null });
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
       const storagePath = `${session.user.id}/${isMain ? 'main' : 'gallery'}_${Date.now()}.jpg`;
 
-      const url = await uploadImage('profile-photos', storagePath, blob);
+      const url = await uploadPhotoFromUri('profile-photos', storagePath, uri);
       if (!url) {
         set({ isUploading: false });
         return { result: null, error: 'Failed to upload photo' };
@@ -111,7 +109,7 @@ export const usePhotoVerificationStore = create<PhotoVerificationState>((set, ge
   },
 
   checkPhotoExpiration: () => {
-    const profile = useProfileStore.getState().profile;
+    const profile = useProfileStore.getState().profile ?? useAuthStore.getState().user;
     if (!profile?.main_photo_expires_at) {
       return { isExpired: true, daysRemaining: 0, showReminder: true };
     }

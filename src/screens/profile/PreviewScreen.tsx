@@ -13,9 +13,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import Button from '../../components/ui/Button';
-import { useProfileStore } from '../../store';
+import { useProfileStore, usePhotoVerificationStore, useAuthStore } from '../../store';
+import { uploadPhotoFromUri } from '../../lib/supabase';
+import * as Location from 'expo-location';
+import { addDays } from 'date-fns';
 import {
   COLORS,
+  APP_CONFIG,
   calculateAge,
   cmToFeetInches,
   ETHNICITY_OPTIONS,
@@ -28,6 +32,7 @@ import {
   INCOME_OPTIONS,
   GENDER_OPTIONS,
 } from '../../constants';
+import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHOTO_HEIGHT = 350;
@@ -36,7 +41,7 @@ const PreviewScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
-  const { createProfile, updateDealBreakers, uploadMainPhoto, uploadGalleryPhoto } = useProfileStore();
+  const { createProfile, updateDealBreakers } = useProfileStore();
 
   const { profileData, dealBreakers } = route.params || {};
   const [isCreating, setIsCreating] = useState(false);
@@ -47,17 +52,34 @@ const PreviewScreen = () => {
   const handleCreateProfile = async () => {
     setIsCreating(true);
     try {
-      const { url: mainPhotoUrl, error: photoError } = await uploadMainPhoto(profileData.mainPhoto);
-      if (photoError) {
+      const userId = useAuthStore.getState().session?.user?.id;
+      if (!userId) {
+        Alert.alert('Error', 'Not authenticated. Please sign in again.');
+        setIsCreating(false);
+        return;
+      }
+
+      // Upload main photo directly using session user ID (profile doesn't exist yet)
+      const mainPhotoUrl = await uploadPhotoFromUri(
+        'profile-photos',
+        `${userId}/main_${Date.now()}.jpg`,
+        profileData.mainPhoto,
+      );
+      if (!mainPhotoUrl) {
         Alert.alert('Error', 'Failed to upload main photo. Please try again.');
         setIsCreating(false);
         return;
       }
 
+      // Upload gallery photos
       const galleryUrls: string[] = [];
       for (let i = 0; i < (profileData.galleryPhotos || []).length; i++) {
-        const { url } = await uploadGalleryPhoto(profileData.galleryPhotos[i], i);
-        if (url) galleryUrls.push(url);
+        const galUrl = await uploadPhotoFromUri(
+          'profile-photos',
+          `${userId}/gallery_${i}_${Date.now()}.jpg`,
+          profileData.galleryPhotos[i],
+        );
+        if (galUrl) galleryUrls.push(galUrl);
       }
 
       const { error: profileError } = await createProfile({
@@ -78,6 +100,7 @@ const PreviewScreen = () => {
         bio: profileData.bio,
         things_to_know: profileData.things_to_know,
         main_photo_url: mainPhotoUrl,
+        main_photo_expires_at: addDays(new Date(), APP_CONFIG.PHOTO_EXPIRATION_DAYS).toISOString(),
         photo_urls: galleryUrls,
       });
 
@@ -88,6 +111,33 @@ const PreviewScreen = () => {
       }
 
       await updateDealBreakers(dealBreakers);
+
+      // Fire off photo verification silently in the background
+      if (profileData.mainPhoto && profileData.mainPhotoMetadata) {
+        usePhotoVerificationStore.getState().uploadAndVerifyPhoto(
+          profileData.mainPhoto,
+          true,
+          profileData.mainPhotoMetadata,
+        ).catch(() => {});
+      }
+
+      // Request location and save to profile in background
+      Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
+        if (status !== 'granted') return;
+        try {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          const [geo] = await Location.reverseGeocodeAsync({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+          useProfileStore.getState().updateLocation(
+            loc.coords.latitude,
+            loc.coords.longitude,
+            geo?.city || undefined,
+            geo?.region || undefined,
+          );
+        } catch {}
+      });
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
       setIsCreating(false);
@@ -194,7 +244,7 @@ const PreviewScreen = () => {
           disabled={isCreating}
         />
         <Button
-          title="Looks Good!"
+          title={ONBOARDING_COPY.preview.button}
           onPress={handleCreateProfile}
           loading={isCreating}
           style={styles.nextButton}

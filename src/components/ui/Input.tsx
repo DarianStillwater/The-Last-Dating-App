@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surfaceVariant,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: 'transparent',
   },

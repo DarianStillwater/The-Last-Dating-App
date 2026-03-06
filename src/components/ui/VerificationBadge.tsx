@@ -19,22 +19,22 @@ const CONFIG: Record<ProfileVerificationStatus, {
   label: string;
 }> = {
   verified: {
-    icon: 'shield-checkmark',
+    icon: 'leaf',
     color: COLORS.success,
     bg: COLORS.success + '20',
-    label: 'Verified',
+    label: 'Thriving',
   },
   pending: {
-    icon: 'time',
+    icon: 'timer-outline',
     color: COLORS.warning,
     bg: COLORS.warning + '20',
-    label: 'Pending',
+    label: 'Sprouting',
   },
   expired: {
-    icon: 'warning',
+    icon: 'alert-circle',
     color: COLORS.error,
     bg: COLORS.error + '20',
-    label: 'Expired',
+    label: 'Wilting',
   },
   rejected: {
     icon: 'close-circle',
@@ -43,7 +43,7 @@ const CONFIG: Record<ProfileVerificationStatus, {
     label: 'Rejected',
   },
   unverified: {
-    icon: 'shield-outline',
+    icon: 'help-circle-outline',
     color: COLORS.textSecondary,
     bg: COLORS.surfaceVariant,
     label: 'Unverified',

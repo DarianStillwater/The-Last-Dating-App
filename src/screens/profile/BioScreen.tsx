@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '../../components/ui/Button';
 import { COLORS, APP_CONFIG } from '../../constants';
+import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const BioScreen = () => {
   const navigation = useNavigation<any>();
@@ -69,7 +70,7 @@ const BioScreen = () => {
           </View>
           <TextInput
             style={styles.textArea}
-            placeholder="Share a bit about yourself, your interests, what you're looking for..."
+            placeholder={ONBOARDING_COPY.bio.placeholder}
             placeholderTextColor={COLORS.textLight}
             value={bio}
             onChangeText={(text) => setBio(text.slice(0, APP_CONFIG.MAX_BIO_LENGTH))}

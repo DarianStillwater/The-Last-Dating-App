@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '../../components/ui/Button';
 import { COLORS } from '../../constants';
+import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,7 +28,7 @@ const WelcomeScreen = () => {
       
       {/* Background gradient */}
       <LinearGradient
-        colors={[COLORS.primary, COLORS.primaryDark, '#1A1A2E']}
+        colors={[COLORS.primary, COLORS.primaryDark, COLORS.text]}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -43,53 +44,34 @@ const WelcomeScreen = () => {
         {/* Logo and Tagline */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="heart" size={48} color="#FFF" />
+            <Ionicons name="leaf" size={48} color={COLORS.surface} />
           </View>
           <Text style={styles.title}>The Last</Text>
           <Text style={styles.subtitle}>Dating App</Text>
           <Text style={styles.tagline}>
-            Because great dates{'\n'}shouldn't cost you anything
+            {ONBOARDING_COPY.welcome.tagline}
           </Text>
         </View>
 
         {/* Features */}
         <View style={styles.features}>
-          <View style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
+          {ONBOARDING_COPY.welcome.features.map((feature, index) => (
+            <View key={index} style={styles.feature}>
+              <View style={styles.featureIcon}>
+                <Ionicons name={feature.icon as any} size={24} color={COLORS.secondary} />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>{feature.text}</Text>
+              </View>
             </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>100% Free</Text>
-              <Text style={styles.featureDesc}>No subscriptions, ever</Text>
-            </View>
-          </View>
-
-          <View style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="restaurant" size={24} color={COLORS.secondary} />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Curated Date Spots</Text>
-              <Text style={styles.featureDesc}>We'll suggest the perfect venue</Text>
-            </View>
-          </View>
-
-          <View style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="shield-checkmark" size={24} color={COLORS.secondary} />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Real Connections</Text>
-              <Text style={styles.featureDesc}>10 match limit keeps it real</Text>
-            </View>
-          </View>
+          ))}
         </View>
       </View>
 
       {/* Action buttons */}
       <View style={[styles.actions, { paddingBottom: insets.bottom + 32 }]}>
         <Button
-          title="Create Account"
+          title="Start Planting"
           onPress={() => navigation.navigate('SignUp')}
           variant="primary"
           size="large"
@@ -126,7 +108,7 @@ const styles = StyleSheet.create({
   circle: {
     position: 'absolute',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(240, 255, 244, 0.05)', // plant-themed translucent
   },
   circle1: {
     width: 300,
@@ -158,7 +140,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(240, 255, 244, 0.15)', // plant-themed translucent
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -166,19 +148,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 42,
     fontWeight: '800',
-    color: '#FFF',
+    color: COLORS.surface,
     letterSpacing: -1,
   },
   subtitle: {
     fontSize: 42,
     fontWeight: '800',
-    color: '#FFF',
+    color: COLORS.surface,
     letterSpacing: -1,
     marginBottom: 16,
   },
   tagline: {
     fontSize: 18,
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(240, 255, 244, 0.8)', // plant-themed translucent
     textAlign: 'center',
     lineHeight: 26,
   },
@@ -188,7 +170,7 @@ const styles = StyleSheet.create({
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(240, 255, 244, 0.1)', // plant-themed translucent
     borderRadius: 16,
     padding: 16,
   },
@@ -196,7 +178,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(240, 255, 244, 0.1)', // plant-themed translucent
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -207,20 +189,20 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFF',
+    color: COLORS.surface,
     marginBottom: 2,
   },
   featureDesc: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(240, 255, 244, 0.7)', // plant-themed translucent
   },
   actions: {
     paddingHorizontal: 32,
     gap: 12,
   },
   createButton: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
+    backgroundColor: COLORS.surface,
+    shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
@@ -230,7 +212,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   signInText: {
-    color: '#FFF',
+    color: COLORS.surface,
   },
 });
 

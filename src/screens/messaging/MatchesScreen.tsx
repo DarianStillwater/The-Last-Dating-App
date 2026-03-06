@@ -15,6 +15,8 @@ import { formatDistanceToNow } from 'date-fns';
 
 import { useMatchStore } from '../../store';
 import { COLORS, calculateAge } from '../../constants';
+import { GROWTH_STAGES } from '../../theme/plantMetaphors';
+import { getGrowthStage } from '../../utils/matchGrowth';
 import type { Match } from '../../types';
 
 const MatchesScreen = () => {
@@ -59,6 +61,8 @@ const MatchesScreen = () => {
     const timeAgo = item.last_message_at
       ? formatDistanceToNow(new Date(item.last_message_at), { addSuffix: true })
       : 'New match';
+    const stage = getGrowthStage(item);
+    const stageInfo = GROWTH_STAGES[stage];
 
     return (
       <TouchableOpacity
@@ -76,9 +80,15 @@ const MatchesScreen = () => {
             </Text>
             <Text style={styles.conversationTime}>{timeAgo}</Text>
           </View>
-          <Text style={styles.conversationPreview} numberOfLines={1}>
-            {item.last_message_preview || 'Start the conversation!'}
-          </Text>
+          <View style={styles.conversationMeta}>
+            <Text style={styles.conversationPreview} numberOfLines={1}>
+              {item.last_message_preview || 'Start the conversation!'}
+            </Text>
+            <View style={styles.growthBadge}>
+              <Ionicons name={stageInfo.icon as any} size={12} color={COLORS.primary} />
+              <Text style={styles.growthLabel}>{stageInfo.label}</Text>
+            </View>
+          </View>
         </View>
         <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
       </TouchableOpacity>
@@ -90,9 +100,9 @@ const MatchesScreen = () => {
       <View style={styles.emptyIcon}>
         <Ionicons name="heart-outline" size={64} color={COLORS.textSecondary} />
       </View>
-      <Text style={styles.emptyTitle}>No matches yet</Text>
+      <Text style={styles.emptyTitle}>Your garden is empty</Text>
       <Text style={styles.emptySubtitle}>
-        Keep swiping to find your{'\n'}perfect match!
+        Start swiping to plant{'\n'}your first seeds
       </Text>
     </View>
   );
@@ -100,8 +110,8 @@ const MatchesScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Matches</Text>
-        <Text style={styles.matchCount}>{matches.length} matches</Text>
+        <Text style={styles.headerTitle}>Your Garden</Text>
+        <Text style={styles.matchCount}>{matches.length} Connections</Text>
       </View>
 
       <FlatList
@@ -119,7 +129,7 @@ const MatchesScreen = () => {
             {/* New Matches Section */}
             {newMatches.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>New Matches</Text>
+                <Text style={styles.sectionTitle}>New Seeds</Text>
                 <FlatList
                   data={newMatches}
                   keyExtractor={(item) => item.id}
@@ -240,9 +250,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
   },
+  conversationMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   conversationPreview: {
     fontSize: 14,
     color: COLORS.textSecondary,
+    flex: 1,
+  },
+  growthBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: COLORS.primaryLight + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  growthLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   emptyContainer: {
     flex: 1,

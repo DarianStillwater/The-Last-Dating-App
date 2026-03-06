@@ -81,9 +81,9 @@ const MessagesScreen = () => {
       <View style={styles.emptyIcon}>
         <Ionicons name="chatbubbles-outline" size={64} color={COLORS.textSecondary} />
       </View>
-      <Text style={styles.emptyTitle}>No messages yet</Text>
+      <Text style={styles.emptyTitle}>No conversations yet</Text>
       <Text style={styles.emptySubtitle}>
-        Match with someone and start{'\n'}a conversation!
+        Start nurturing{'\n'}your connections
       </Text>
     </View>
   );

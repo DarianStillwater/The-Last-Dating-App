@@ -129,7 +129,7 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' || variant === 'ghost' ? COLORS.primary : '#FFFFFF'}
+          color={variant === 'outline' || variant === 'ghost' ? COLORS.primary : COLORS.surface}
           size="small"
         />
       ) : (
@@ -148,24 +148,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: 20,
     gap: 8,
   },
   primary: {
     backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.primaryDark,
   },
   secondary: {
     backgroundColor: COLORS.secondary,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.secondaryDark,
   },
   outline: {
     backgroundColor: 'transparent',
@@ -177,11 +171,8 @@ const styles = StyleSheet.create({
   },
   danger: {
     backgroundColor: COLORS.error,
-    shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#B71C1C',
   },
   small: {
     paddingVertical: 8,
@@ -206,19 +197,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   textPrimary: {
-    color: '#FFFFFF',
+    color: COLORS.surface,
   },
   textSecondary: {
-    color: '#FFFFFF',
+    color: COLORS.surface,
   },
   textOutline: {
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
   },
   textGhost: {
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
   },
   textDanger: {
-    color: '#FFFFFF',
+    color: COLORS.surface,
   },
   textSmall: {
     fontSize: 14,

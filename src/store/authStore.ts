@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotifications, saveTokenToDb, deactivateToken } from '../lib/notifications';
 import type { UserProfile } from '../types';
@@ -58,6 +59,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isProfileComplete,
         });
 
+        // Sync profile into profileStore so all screens can read it immediately
+        if (profile) {
+          const { useProfileStore } = require('./profileStore');
+          useProfileStore.setState({ profile: profile as UserProfile });
+        }
+
         // Update last active
         get().updateLastActive();
 
@@ -67,6 +74,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             saveTokenToDb(session.user.id, token);
           }
         });
+
+        // Update location in background
+        if (isProfileComplete) {
+          Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
+            if (status !== 'granted') return;
+            try {
+              const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+              const [geo] = await Location.reverseGeocodeAsync({
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+              });
+              const { useProfileStore } = require('./profileStore');
+              useProfileStore.getState().updateLocation(
+                loc.coords.latitude,
+                loc.coords.longitude,
+                geo?.city || undefined,
+                geo?.region || undefined,
+              );
+            } catch (e) {
+              console.error('Error updating location:', e);
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
@@ -109,6 +139,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           isProfileComplete,
         });
+
+        // Sync profile into profileStore so all screens can read it immediately
+        if (profile) {
+          const { useProfileStore } = require('./profileStore');
+          useProfileStore.setState({ profile: profile as UserProfile });
+        }
       }
 
       return { error: null };

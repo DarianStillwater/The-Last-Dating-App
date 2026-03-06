@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, uploadImage, deleteImage } from '../lib/supabase';
+import { supabase, uploadPhotoFromUri, deleteImage } from '../lib/supabase';
 import type { UserProfile, DealBreakers } from '../types';
 import { useAuthStore } from './authStore';
 import { addDays, format } from 'date-fns';
@@ -178,10 +178,10 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
 
       const { data, error } = await supabase
         .from('deal_breakers')
-        .upsert({
-          user_id: session.user.id,
-          ...updates,
-        })
+        .upsert(
+          { user_id: session.user.id, ...updates },
+          { onConflict: 'user_id' },
+        )
         .select()
         .single();
 
@@ -208,14 +208,10 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Convert URI to blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
       // Generate unique filename
       const filename = `${profile.id}/main_${Date.now()}.jpg`;
-      
-      const url = await uploadImage('profile-photos', filename, blob);
+
+      const url = await uploadPhotoFromUri('profile-photos', filename, uri);
 
       if (!url) {
         return { url: null, error: 'Failed to upload photo' };
@@ -268,14 +264,10 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Convert URI to blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
       // Generate unique filename
       const filename = `${profile.id}/gallery_${position}_${Date.now()}.jpg`;
-      
-      const url = await uploadImage('profile-photos', filename, blob);
+
+      const url = await uploadPhotoFromUri('profile-photos', filename, uri);
 
       if (!url) {
         return { url: null, error: 'Failed to upload photo' };
