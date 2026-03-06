@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, Dimensions, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,24 +10,15 @@ import {
   COLORS,
   calculateAge,
   cmToFeetInches,
-  ETHNICITY_OPTIONS,
-  RELIGION_OPTIONS,
-  OFFSPRING_OPTIONS,
-  SMOKER_OPTIONS,
-  ALCOHOL_OPTIONS,
-  DRUGS_OPTIONS,
-  DIET_OPTIONS,
-  INCOME_OPTIONS,
-  GENDER_OPTIONS,
 } from '../../constants';
 import type { UserProfile } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_HEIGHT = 400;
+const PHOTO_HEIGHT = 320;
 
 const ProfileDetailScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute();
   const { userId } = route.params as { userId: string };
 
@@ -88,23 +79,11 @@ const ProfileDetailScreen: React.FC = () => {
     setActivePhotoIndex(index);
   };
 
-  const renderDetailRow = (label: string, value: string | undefined | null): React.ReactNode => {
-    if (!value) return null;
-    return (
-      <View style={styles.detailRow} key={label}>
-        <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value}</Text>
-      </View>
-    );
-  };
-
-  const renderPhotoItem = ({ item }: { item: string }) => {
-    return (
-      <View style={styles.photoContainer}>
-        <Image source={{ uri: item }} style={styles.photo} resizeMode="cover" />
-      </View>
-    );
-  };
+  const renderPhotoItem = ({ item }: { item: string }) => (
+    <View style={styles.photoContainer}>
+      <Image source={{ uri: item }} style={styles.photo} resizeMode="cover" />
+    </View>
+  );
 
   if (isLoading) {
     return (
@@ -130,18 +109,6 @@ const ProfileDetailScreen: React.FC = () => {
   const age = calculateAge(profile.birth_date);
   const heightDisplay = cmToFeetInches(profile.height_cm);
 
-  const genderLabel = GENDER_OPTIONS.find((o) => o.value === profile.gender)?.label;
-  const ethnicityLabel = ETHNICITY_OPTIONS.find((o) => o.value === profile.ethnicity)?.label;
-  const religionLabel = RELIGION_OPTIONS.find((o) => o.value === profile.religion)?.label;
-  const offspringLabel = OFFSPRING_OPTIONS.find((o) => o.value === profile.offspring)?.label;
-  const smokerLabel = SMOKER_OPTIONS.find((o) => o.value === profile.smoker)?.label;
-  const alcoholLabel = ALCOHOL_OPTIONS.find((o) => o.value === profile.alcohol)?.label;
-  const drugsLabel = DRUGS_OPTIONS.find((o) => o.value === profile.drugs)?.label;
-  const dietLabel = DIET_OPTIONS.find((o) => o.value === profile.diet)?.label;
-  const incomeLabel = profile.income
-    ? INCOME_OPTIONS.find((o) => o.value === profile.income)?.label
-    : undefined;
-
   const locationText =
     profile.location_city && profile.location_state
       ? `${profile.location_city}, ${profile.location_state}`
@@ -149,111 +116,83 @@ const ProfileDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Photo Carousel */}
-        <View style={styles.carouselContainer}>
-          {photos.length > 0 ? (
-            <FlatList
-              ref={flatListRef}
-              data={photos}
-              renderItem={renderPhotoItem}
-              keyExtractor={(item, index) => `photo-${index}`}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onScroll={onPhotoScroll}
-              scrollEventThrottle={16}
-            />
-          ) : (
-            <View style={styles.noPhotoContainer}>
-              <Ionicons name="person-outline" size={64} color={COLORS.textLight} />
-              <Text style={styles.noPhotoText}>No photos available</Text>
-            </View>
-          )}
+      {/* Photo Carousel */}
+      <View style={styles.carouselContainer}>
+        {photos.length > 0 ? (
+          <FlatList
+            ref={flatListRef}
+            data={photos}
+            renderItem={renderPhotoItem}
+            keyExtractor={(item, index) => `photo-${index}`}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onPhotoScroll}
+            scrollEventThrottle={16}
+          />
+        ) : (
+          <View style={styles.noPhotoContainer}>
+            <Ionicons name="person-outline" size={64} color={COLORS.textLight} />
+            <Text style={styles.noPhotoText}>No photos available</Text>
+          </View>
+        )}
 
-          {/* Page Indicators */}
-          {photos.length > 1 && (
-            <View style={styles.pageIndicatorContainer}>
-              {photos.map((_, index) => (
-                <View
-                  key={`dot-${index}`}
-                  style={[
-                    styles.pageIndicatorDot,
-                    index === activePhotoIndex
-                      ? styles.pageIndicatorDotActive
-                      : styles.pageIndicatorDotInactive,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
+        {photos.length > 1 && (
+          <View style={styles.pageIndicatorContainer}>
+            {photos.map((_, index) => (
+              <View
+                key={`dot-${index}`}
+                style={[
+                  styles.pageIndicatorDot,
+                  index === activePhotoIndex
+                    ? styles.pageIndicatorDotActive
+                    : styles.pageIndicatorDotInactive,
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Profile Info */}
+      <View style={styles.infoArea}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{profile.first_name}</Text>
+          <Text style={styles.age}>, {age}</Text>
         </View>
 
-        {/* Profile Info Section */}
-        <View style={styles.card}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>{profile.first_name}</Text>
-            <Text style={styles.age}>, {age}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="resize-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoText}>{heightDisplay}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <VerificationBadge
-              status={profile.photo_verification_status}
-              size="small"
-              showLabel
-            />
+        <View style={styles.metaRow}>
+          <View style={styles.infoChip}>
+            <Ionicons name="resize-outline" size={14} color={COLORS.textSecondary} />
+            <Text style={styles.infoChipText}>{heightDisplay}</Text>
           </View>
           {locationText && (
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={16} color={COLORS.textSecondary} />
-              <Text style={styles.infoText}>{locationText}</Text>
+            <View style={styles.infoChip}>
+              <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+              <Text style={styles.infoChipText}>{locationText}</Text>
             </View>
           )}
+          <VerificationBadge
+            status={profile.photo_verification_status}
+            size="small"
+            showLabel
+          />
         </View>
 
-        {/* About Section */}
         {profile.bio ? (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>About</Text>
-            <Text style={styles.bioText}>{profile.bio}</Text>
-          </View>
+          <Text style={styles.bioText} numberOfLines={3}>{profile.bio}</Text>
         ) : null}
 
-        {/* Details Section */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Details</Text>
-          {renderDetailRow('Gender', genderLabel)}
-          {renderDetailRow('Ethnicity', ethnicityLabel)}
-          {renderDetailRow('Religion', religionLabel)}
-          {renderDetailRow('Children', offspringLabel)}
-          {renderDetailRow('Smoking', smokerLabel)}
-          {renderDetailRow('Drinking', alcoholLabel)}
-          {renderDetailRow('Drugs', drugsLabel)}
-          {renderDetailRow('Diet', dietLabel)}
-          {renderDetailRow('Occupation', profile.occupation)}
-          {renderDetailRow('Income', incomeLabel)}
-        </View>
+        <TouchableOpacity
+          style={styles.seeMoreButton}
+          onPress={() => navigation.navigate('ProfileDetails', { userId: profile.id })}
+        >
+          <Text style={styles.seeMoreText}>See More Details</Text>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Things to Know Section */}
-        {profile.things_to_know ? (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Things to Know</Text>
-            <Text style={styles.bioText}>{profile.things_to_know}</Text>
-          </View>
-        ) : null}
-
-        {/* Bottom spacer for safe area */}
-        <View style={{ height: insets.bottom + 24 }} />
-      </ScrollView>
-
-      {/* Close Button (overlay) */}
+      {/* Close Button */}
       <TouchableOpacity
         style={[styles.closeButton, { top: insets.top + 8 }]}
         onPress={() => navigation.goBack()}
@@ -269,12 +208,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 16,
   },
   centered: {
     flex: 1,
@@ -361,13 +294,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    marginTop: 12,
+  infoArea: {
+    flex: 1,
+    padding: 20,
   },
   nameRow: {
     flexDirection: 'row',
@@ -384,43 +313,46 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     color: COLORS.textSecondary,
   },
-  infoRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
   },
-  infoText: {
-    fontSize: 14,
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.surface,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  infoChipText: {
+    fontSize: 13,
     color: COLORS.textSecondary,
-    marginLeft: 6,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 8,
   },
   bioText: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.text,
     lineHeight: 22,
+    marginBottom: 16,
   },
-  detailRow: {
+  seeMoreButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primaryLight + '20',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 'auto',
   },
-  detailLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: '500',
+  seeMoreText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 });
 

@@ -236,9 +236,9 @@ const PhotosScreen = () => {
       {!editMode && (
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '50%' }]} />
+            <View style={[styles.progressFill, { width: '40%' }]} />
           </View>
-          <Text style={styles.progressText}>Step 2 of 4</Text>
+          <Text style={styles.progressText}>Step 2 of 5</Text>
         </View>
       )}
 

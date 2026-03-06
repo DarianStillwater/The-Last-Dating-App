@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Platform,
 } from 'react-native';
@@ -40,7 +39,7 @@ const BasicInfoScreen = () => {
   const [income, setIncome] = useState('');
 
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 6;
 
   const toggleLookingFor = (value: string) => {
     if (lookingFor.includes(value)) {
@@ -55,10 +54,14 @@ const BasicInfoScreen = () => {
       case 1:
         return firstName.length >= 2 && gender && lookingFor.length > 0;
       case 2:
-        return ethnicity && religion;
+        return ethnicity !== '';
       case 3:
-        return offspring && smoker && alcohol && drugs && diet;
+        return religion !== '';
       case 4:
+        return offspring !== '' && smoker !== '';
+      case 5:
+        return alcohol !== '' && drugs !== '' && diet !== '';
+      case 6:
         return true;
       default:
         return false;
@@ -171,12 +174,16 @@ const BasicInfoScreen = () => {
       </View>
 
       <Text style={styles.sectionTitle}>Ethnicity</Text>
-      <View style={styles.optionsList}>
+      <View style={styles.optionsGrid}>
         {ETHNICITY_OPTIONS.map((opt) =>
           renderOption(opt.value, opt.label, ethnicity === opt.value, () => setEthnicity(opt.value))
         )}
       </View>
+    </>
+  );
 
+  const renderStep3 = () => (
+    <>
       <Text style={styles.sectionTitle}>Religion</Text>
       <View style={styles.optionsList}>
         {RELIGION_OPTIONS.map((opt) =>
@@ -186,7 +193,7 @@ const BasicInfoScreen = () => {
     </>
   );
 
-  const renderStep3 = () => (
+  const renderStep4 = () => (
     <>
       <Text style={styles.sectionTitle}>Children</Text>
       <View style={styles.optionsList}>
@@ -201,7 +208,11 @@ const BasicInfoScreen = () => {
           renderOption(opt.value, opt.label, smoker === opt.value, () => setSmoker(opt.value))
         )}
       </View>
+    </>
+  );
 
+  const renderStep5 = () => (
+    <>
       <Text style={styles.sectionTitle}>Drinking</Text>
       <View style={styles.optionsGrid}>
         {ALCOHOL_OPTIONS.map((opt) =>
@@ -225,7 +236,7 @@ const BasicInfoScreen = () => {
     </>
   );
 
-  const renderStep4 = () => (
+  const renderStep6 = () => (
     <>
       <Text style={styles.sectionTitle}>What do you do? (Optional)</Text>
       <Input
@@ -250,22 +261,20 @@ const BasicInfoScreen = () => {
         <View style={styles.companionRow}>
           <PlantCompanion growthStage={step} />
           <View style={styles.progressInfo}>
-            <Text style={styles.progressText}>Step {step}: {PLANTER_STAGES[step as keyof typeof PLANTER_STAGES].label}</Text>
+            <Text style={styles.progressText}>Step {step}: {PLANTER_STAGES[step as keyof typeof PLANTER_STAGES]?.label || ''}</Text>
           </View>
         </View>
         <GrowingVine progress={step / totalSteps} totalSteps={totalSteps} currentStep={step} />
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.contentArea}>
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
-      </ScrollView>
+        {step === 5 && renderStep5()}
+        {step === 6 && renderStep6()}
+      </View>
 
       {/* Navigation */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -311,19 +320,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
-  scrollView: {
+  contentArea: {
     flex: 1,
-  },
-  scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
-    marginTop: 24,
-    marginBottom: 12,
+    marginTop: 16,
+    marginBottom: 8,
   },
   optionsGrid: {
     flexDirection: 'row',
@@ -331,13 +337,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   optionsList: {
-    gap: 8,
+    gap: 6,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     backgroundColor: COLORS.surface,
@@ -363,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
     backgroundColor: COLORS.surface,

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Alert,
@@ -32,10 +31,12 @@ import {
   APP_CONFIG,
 } from '../../constants';
 
+type Section = 'basic' | 'background' | 'lifestyle' | 'professional' | 'about';
+
 const EditProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { profile, updateProfile, isLoading } = useProfileStore();
+  const { profile, updateProfile } = useProfileStore();
 
   const [firstName, setFirstName] = useState('');
   const [gender, setGender] = useState('');
@@ -53,6 +54,7 @@ const EditProfileScreen: React.FC = () => {
   const [bio, setBio] = useState('');
   const [thingsToKnow, setThingsToKnow] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<Section>('basic');
 
   useEffect(() => {
     if (profile) {
@@ -131,7 +133,31 @@ const EditProfileScreen: React.FC = () => {
       onPress={onPress}
     >
       <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{label}</Text>
-      {selected && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
+      {selected && <Ionicons name="checkmark" size={18} color={COLORS.primary} />}
+    </TouchableOpacity>
+  );
+
+  const getLabel = (options: { value: string; label: string }[], value: string) =>
+    options.find((o) => o.value === value)?.label || value;
+
+  const toggleSection = (section: Section) => {
+    setExpandedSection(expandedSection === section ? 'basic' : section);
+  };
+
+  const SectionHeader = ({ title, section, summary }: { title: string; section: Section; summary: string }) => (
+    <TouchableOpacity
+      style={[styles.sectionHeader, expandedSection === section && styles.sectionHeaderActive]}
+      onPress={() => toggleSection(section)}
+    >
+      <View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {expandedSection !== section && <Text style={styles.sectionSummary}>{summary}</Text>}
+      </View>
+      <Ionicons
+        name={expandedSection === section ? 'chevron-up' : 'chevron-down'}
+        size={20}
+        color={COLORS.textSecondary}
+      />
     </TouchableOpacity>
   );
 
@@ -157,159 +183,114 @@ const EditProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.sectionTitle}>Name</Text>
-        <Input
-          placeholder="First name"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
-
-        <Text style={styles.sectionTitle}>Gender</Text>
-        <View style={styles.optionsGrid}>
-          {GENDER_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, gender === opt.value, () => setGender(opt.value))
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Looking For</Text>
-        <View style={styles.optionsGrid}>
-          {LOOKING_FOR_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, lookingFor.includes(opt.value), () =>
-              toggleLookingFor(opt.value)
-            )
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Height</Text>
-        <View style={styles.heightContainer}>
-          <TouchableOpacity
-            style={styles.heightButton}
-            onPress={() => setHeightCm(Math.max(HEIGHT_RANGE.MIN_CM, heightCm - 1))}
-          >
-            <Ionicons name="remove" size={24} color={COLORS.text} />
-          </TouchableOpacity>
-          <View style={styles.heightDisplay}>
-            <Text style={styles.heightValue}>{cmToFeetInches(heightCm)}</Text>
-            <Text style={styles.heightCm}>{heightCm} cm</Text>
+      <View style={styles.contentArea}>
+        {/* Basic */}
+        <SectionHeader title="Basic Info" section="basic" summary={`${firstName}, ${getLabel(GENDER_OPTIONS, gender)}, ${cmToFeetInches(heightCm)}`} />
+        {expandedSection === 'basic' && (
+          <View style={styles.sectionContent}>
+            <Input placeholder="First name" value={firstName} onChangeText={setFirstName} />
+            <Text style={styles.fieldLabel}>Gender</Text>
+            <View style={styles.optionsGrid}>
+              {GENDER_OPTIONS.map((opt) => renderOption(opt.value, opt.label, gender === opt.value, () => setGender(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Looking For</Text>
+            <View style={styles.optionsGrid}>
+              {LOOKING_FOR_OPTIONS.map((opt) => renderOption(opt.value, opt.label, lookingFor.includes(opt.value), () => toggleLookingFor(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Height</Text>
+            <View style={styles.heightContainer}>
+              <TouchableOpacity style={styles.heightButton} onPress={() => setHeightCm(Math.max(HEIGHT_RANGE.MIN_CM, heightCm - 1))}>
+                <Ionicons name="remove" size={20} color={COLORS.text} />
+              </TouchableOpacity>
+              <Text style={styles.heightValue}>{cmToFeetInches(heightCm)}</Text>
+              <TouchableOpacity style={styles.heightButton} onPress={() => setHeightCm(Math.min(HEIGHT_RANGE.MAX_CM, heightCm + 1))}>
+                <Ionicons name="add" size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <TouchableOpacity
-            style={styles.heightButton}
-            onPress={() => setHeightCm(Math.min(HEIGHT_RANGE.MAX_CM, heightCm + 1))}
-          >
-            <Ionicons name="add" size={24} color={COLORS.text} />
-          </TouchableOpacity>
-        </View>
+        )}
 
-        <Text style={styles.sectionTitle}>Ethnicity</Text>
-        <View style={styles.optionsList}>
-          {ETHNICITY_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, ethnicity === opt.value, () =>
-              setEthnicity(opt.value)
-            )
-          )}
-        </View>
+        {/* Background */}
+        <SectionHeader title="Background" section="background" summary={[getLabel(ETHNICITY_OPTIONS, ethnicity), getLabel(RELIGION_OPTIONS, religion)].filter(Boolean).join(', ')} />
+        {expandedSection === 'background' && (
+          <View style={styles.sectionContent}>
+            <Text style={styles.fieldLabel}>Ethnicity</Text>
+            <View style={styles.optionsGrid}>
+              {ETHNICITY_OPTIONS.map((opt) => renderOption(opt.value, opt.label, ethnicity === opt.value, () => setEthnicity(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Religion</Text>
+            <View style={styles.optionsGrid}>
+              {RELIGION_OPTIONS.map((opt) => renderOption(opt.value, opt.label, religion === opt.value, () => setReligion(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Children</Text>
+            <View style={styles.optionsGrid}>
+              {OFFSPRING_OPTIONS.map((opt) => renderOption(opt.value, opt.label, offspring === opt.value, () => setOffspring(opt.value)))}
+            </View>
+          </View>
+        )}
 
-        <Text style={styles.sectionTitle}>Religion</Text>
-        <View style={styles.optionsList}>
-          {RELIGION_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, religion === opt.value, () =>
-              setReligion(opt.value)
-            )
-          )}
-        </View>
+        {/* Lifestyle */}
+        <SectionHeader title="Lifestyle" section="lifestyle" summary={[getLabel(SMOKER_OPTIONS, smoker), getLabel(ALCOHOL_OPTIONS, alcohol), getLabel(DIET_OPTIONS, diet)].filter(Boolean).join(', ')} />
+        {expandedSection === 'lifestyle' && (
+          <View style={styles.sectionContent}>
+            <Text style={styles.fieldLabel}>Smoking</Text>
+            <View style={styles.optionsGrid}>
+              {SMOKER_OPTIONS.map((opt) => renderOption(opt.value, opt.label, smoker === opt.value, () => setSmoker(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Drinking</Text>
+            <View style={styles.optionsGrid}>
+              {ALCOHOL_OPTIONS.map((opt) => renderOption(opt.value, opt.label, alcohol === opt.value, () => setAlcohol(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Drugs</Text>
+            <View style={styles.optionsGrid}>
+              {DRUGS_OPTIONS.map((opt) => renderOption(opt.value, opt.label, drugs === opt.value, () => setDrugs(opt.value)))}
+            </View>
+            <Text style={styles.fieldLabel}>Diet</Text>
+            <View style={styles.optionsGrid}>
+              {DIET_OPTIONS.map((opt) => renderOption(opt.value, opt.label, diet === opt.value, () => setDiet(opt.value)))}
+            </View>
+          </View>
+        )}
 
-        <Text style={styles.sectionTitle}>Children</Text>
-        <View style={styles.optionsList}>
-          {OFFSPRING_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, offspring === opt.value, () =>
-              setOffspring(opt.value)
-            )
-          )}
-        </View>
+        {/* Professional */}
+        <SectionHeader title="Professional" section="professional" summary={occupation || 'Not set'} />
+        {expandedSection === 'professional' && (
+          <View style={styles.sectionContent}>
+            <Input placeholder="Occupation" value={occupation} onChangeText={setOccupation} />
+            <Text style={styles.fieldLabel}>Income</Text>
+            <View style={styles.optionsGrid}>
+              {INCOME_OPTIONS.map((opt) => renderOption(opt.value, opt.label, income === opt.value, () => setIncome(opt.value)))}
+            </View>
+          </View>
+        )}
 
-        <Text style={styles.sectionTitle}>Smoking</Text>
-        <View style={styles.optionsGrid}>
-          {SMOKER_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, smoker === opt.value, () => setSmoker(opt.value))
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Drinking</Text>
-        <View style={styles.optionsGrid}>
-          {ALCOHOL_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, alcohol === opt.value, () => setAlcohol(opt.value))
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Drugs</Text>
-        <View style={styles.optionsGrid}>
-          {DRUGS_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, drugs === opt.value, () => setDrugs(opt.value))
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Diet</Text>
-        <View style={styles.optionsGrid}>
-          {DIET_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, diet === opt.value, () => setDiet(opt.value))
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Occupation (Optional)</Text>
-        <Input
-          placeholder="What do you do?"
-          value={occupation}
-          onChangeText={setOccupation}
-        />
-
-        <Text style={styles.sectionTitle}>Income (Optional)</Text>
-        <View style={styles.optionsList}>
-          {INCOME_OPTIONS.map((opt) =>
-            renderOption(opt.value, opt.label, income === opt.value, () => setIncome(opt.value))
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Bio</Text>
-        <View style={styles.textAreaContainer}>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Tell people about yourself..."
-            placeholderTextColor={COLORS.textLight}
-            value={bio}
-            onChangeText={(text) => setBio(text.slice(0, APP_CONFIG.MAX_BIO_LENGTH))}
-            multiline
-            maxLength={APP_CONFIG.MAX_BIO_LENGTH}
-            textAlignVertical="top"
-          />
-          <Text style={styles.charCounter}>
-            {bio.length}/{APP_CONFIG.MAX_BIO_LENGTH}
-          </Text>
-        </View>
-
-        <Text style={styles.sectionTitle}>Things to Know</Text>
-        <View style={styles.textAreaContainer}>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Anything else people should know..."
-            placeholderTextColor={COLORS.textLight}
-            value={thingsToKnow}
-            onChangeText={(text) =>
-              setThingsToKnow(text.slice(0, APP_CONFIG.MAX_THINGS_TO_KNOW_LENGTH))
-            }
-            multiline
-            maxLength={APP_CONFIG.MAX_THINGS_TO_KNOW_LENGTH}
-            textAlignVertical="top"
-          />
-          <Text style={styles.charCounter}>
-            {thingsToKnow.length}/{APP_CONFIG.MAX_THINGS_TO_KNOW_LENGTH}
-          </Text>
-        </View>
-      </ScrollView>
+        {/* About */}
+        <SectionHeader title="About" section="about" summary={bio ? `${bio.slice(0, 30)}...` : 'Not set'} />
+        {expandedSection === 'about' && (
+          <View style={styles.sectionContent}>
+            <Text style={styles.fieldLabel}>Bio</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Tell people about yourself..."
+              placeholderTextColor={COLORS.textLight}
+              value={bio}
+              onChangeText={(text) => setBio(text.slice(0, APP_CONFIG.MAX_BIO_LENGTH))}
+              multiline
+              textAlignVertical="top"
+            />
+            <Text style={styles.fieldLabel}>Things to Know</Text>
+            <TextInput
+              style={[styles.textArea, { minHeight: 60 }]}
+              placeholder="Anything else people should know..."
+              placeholderTextColor={COLORS.textLight}
+              value={thingsToKnow}
+              onChangeText={(text) => setThingsToKnow(text.slice(0, APP_CONFIG.MAX_THINGS_TO_KNOW_LENGTH))}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -361,35 +342,53 @@ const styles = StyleSheet.create({
   saveButtonTextDisabled: {
     color: COLORS.textLight,
   },
-  scrollView: {
+  contentArea: {
     flex: 1,
+    paddingHorizontal: 16,
   },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 48,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+  },
+  sectionHeaderActive: {
+    borderBottomWidth: 0,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
-    marginTop: 24,
-    marginBottom: 12,
+  },
+  sectionSummary: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  sectionContent: {
+    paddingBottom: 8,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 12,
+    marginBottom: 6,
   },
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionsList: {
-    gap: 8,
+    gap: 6,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     backgroundColor: COLORS.surface,
     borderWidth: 2,
     borderColor: COLORS.border,
@@ -401,7 +400,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryLight + '15',
   },
   optionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     fontWeight: '500',
   },
@@ -413,48 +412,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
+    gap: 20,
+    paddingVertical: 8,
   },
   heightButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.border,
   },
-  heightDisplay: {
-    alignItems: 'center',
-  },
   heightValue: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.text,
   },
-  heightCm: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  textAreaContainer: {
+  textArea: {
     backgroundColor: COLORS.surfaceVariant,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: COLORS.border,
-    padding: 16,
-  },
-  textArea: {
-    fontSize: 16,
+    padding: 12,
+    fontSize: 14,
     color: COLORS.text,
-    minHeight: 100,
+    minHeight: 80,
     textAlignVertical: 'top',
-  },
-  charCounter: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'right',
-    marginTop: 8,
   },
 });
 

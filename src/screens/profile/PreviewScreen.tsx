@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Image,
   Alert,
   Dimensions,
@@ -24,18 +23,12 @@ import {
   cmToFeetInches,
   ETHNICITY_OPTIONS,
   RELIGION_OPTIONS,
-  OFFSPRING_OPTIONS,
-  SMOKER_OPTIONS,
-  ALCOHOL_OPTIONS,
-  DRUGS_OPTIONS,
-  DIET_OPTIONS,
-  INCOME_OPTIONS,
   GENDER_OPTIONS,
 } from '../../constants';
 import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_HEIGHT = 350;
+const PHOTO_HEIGHT = 220;
 
 const PreviewScreen = () => {
   const navigation = useNavigation<any>();
@@ -59,7 +52,6 @@ const PreviewScreen = () => {
         return;
       }
 
-      // Upload main photo directly using session user ID (profile doesn't exist yet)
       const mainPhotoUrl = await uploadPhotoFromUri(
         'profile-photos',
         `${userId}/main_${Date.now()}.jpg`,
@@ -71,7 +63,6 @@ const PreviewScreen = () => {
         return;
       }
 
-      // Upload gallery photos
       const galleryUrls: string[] = [];
       for (let i = 0; i < (profileData.galleryPhotos || []).length; i++) {
         const galUrl = await uploadPhotoFromUri(
@@ -112,7 +103,6 @@ const PreviewScreen = () => {
 
       await updateDealBreakers(dealBreakers);
 
-      // Fire off photo verification silently in the background
       if (profileData.mainPhoto && profileData.mainPhotoMetadata) {
         usePhotoVerificationStore.getState().uploadAndVerifyPhoto(
           profileData.mainPhoto,
@@ -121,7 +111,6 @@ const PreviewScreen = () => {
         ).catch(() => {});
       }
 
-      // Request location and save to profile in background
       Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
         if (status !== 'granted') return;
         try {
@@ -145,94 +134,79 @@ const PreviewScreen = () => {
   };
 
   const age = calculateAge(profileData.birth_date);
-
-  const renderDetailRow = (label: string, value?: string | null) => {
-    if (!value) return null;
-    return (
-      <View style={styles.detailRow} key={label}>
-        <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value}</Text>
-      </View>
-    );
-  };
+  const genderLabel = getLabel(GENDER_OPTIONS, profileData.gender);
+  const ethnicityLabel = getLabel(ETHNICITY_OPTIONS, profileData.ethnicity);
+  const religionLabel = getLabel(RELIGION_OPTIONS, profileData.religion);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Progress bar */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: '100%' }]} />
+        </View>
+        <Text style={styles.progressText}>Step 5 of 5</Text>
+      </View>
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile Preview</Text>
         <Text style={styles.headerSubtitle}>This is how others will see you</Text>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Main Photo */}
-        {profileData.mainPhoto ? (
-          <Image
-            source={{ uri: profileData.mainPhoto }}
-            style={styles.mainPhoto}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
-            <Ionicons name="person" size={64} color={COLORS.textSecondary} />
+      <View style={styles.contentArea}>
+        {/* Main Photo with overlay */}
+        <View style={styles.photoWrapper}>
+          {profileData.mainPhoto ? (
+            <Image
+              source={{ uri: profileData.mainPhoto }}
+              style={styles.mainPhoto}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
+              <Ionicons name="person" size={48} color={COLORS.textSecondary} />
+            </View>
+          )}
+          <View style={styles.photoOverlay}>
+            <Text style={styles.overlayName}>{profileData.first_name}, {age}</Text>
+            <Text style={styles.overlayHeight}>{cmToFeetInches(profileData.height_cm)}</Text>
           </View>
-        )}
-
-        {/* Name & Age */}
-        <View style={styles.card}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>{profileData.first_name}</Text>
-            <Text style={styles.age}>, {age}</Text>
-          </View>
-          <Text style={styles.height}>{cmToFeetInches(profileData.height_cm)}</Text>
         </View>
 
-        {/* About */}
-        {profileData.bio && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>About</Text>
-            <Text style={styles.cardText}>{profileData.bio}</Text>
+        {/* Bio snippet */}
+        {profileData.bio ? (
+          <View style={styles.bioCard}>
+            <Text style={styles.bioText} numberOfLines={2}>{profileData.bio}</Text>
           </View>
-        )}
+        ) : null}
 
-        {/* Details */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Details</Text>
-          {renderDetailRow('Gender', getLabel(GENDER_OPTIONS, profileData.gender))}
-          {renderDetailRow('Ethnicity', getLabel(ETHNICITY_OPTIONS, profileData.ethnicity))}
-          {renderDetailRow('Religion', getLabel(RELIGION_OPTIONS, profileData.religion))}
-          {renderDetailRow('Children', getLabel(OFFSPRING_OPTIONS, profileData.offspring))}
-          {renderDetailRow('Smoking', getLabel(SMOKER_OPTIONS, profileData.smoker))}
-          {renderDetailRow('Drinking', getLabel(ALCOHOL_OPTIONS, profileData.alcohol))}
-          {renderDetailRow('Drugs', getLabel(DRUGS_OPTIONS, profileData.drugs))}
-          {renderDetailRow('Diet', getLabel(DIET_OPTIONS, profileData.diet))}
-          {renderDetailRow('Occupation', profileData.occupation)}
-          {renderDetailRow('Income', profileData.income ? getLabel(INCOME_OPTIONS, profileData.income) : null)}
+        {/* Key detail chips */}
+        <View style={styles.detailChips}>
+          <View style={styles.detailChip}>
+            <Text style={styles.chipLabel}>{genderLabel}</Text>
+          </View>
+          <View style={styles.detailChip}>
+            <Text style={styles.chipLabel}>{ethnicityLabel}</Text>
+          </View>
+          <View style={styles.detailChip}>
+            <Text style={styles.chipLabel}>{religionLabel}</Text>
+          </View>
         </View>
 
-        {/* Things to Know */}
-        {profileData.things_to_know && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Things to Know</Text>
-            <Text style={styles.cardText}>{profileData.things_to_know}</Text>
-          </View>
-        )}
-
-        {/* Gallery Preview */}
+        {/* Gallery thumbnails */}
         {profileData.galleryPhotos && profileData.galleryPhotos.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Gallery ({profileData.galleryPhotos.length} photos)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
-              {profileData.galleryPhotos.map((uri: string, idx: number) => (
-                <Image key={idx} source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
-              ))}
-            </ScrollView>
+          <View style={styles.galleryRow}>
+            {profileData.galleryPhotos.slice(0, 4).map((uri: string, idx: number) => (
+              <Image key={idx} source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
+            ))}
+            {profileData.galleryPhotos.length > 4 && (
+              <View style={[styles.galleryThumb, styles.morePhotos]}>
+                <Text style={styles.morePhotosText}>+{profileData.galleryPhotos.length - 4}</Text>
+              </View>
+            )}
           </View>
         )}
-      </ScrollView>
+      </View>
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -259,9 +233,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  progressContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
   header: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -275,14 +269,18 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 4,
   },
-  scrollView: {
+  contentArea: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  scrollContent: {
-    paddingBottom: 24,
+  photoWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
   mainPhoto: {
-    width: SCREEN_WIDTH,
+    width: '100%',
     height: PHOTO_HEIGHT,
   },
   photoPlaceholder: {
@@ -290,68 +288,71 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  card: {
-    backgroundColor: COLORS.surface,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 16,
+  photoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 16,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  name: {
-    fontSize: 28,
+  overlayName: {
+    fontSize: 24,
     fontWeight: '700',
+    color: '#fff',
+  },
+  overlayHeight: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  bioCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  bioText: {
+    fontSize: 14,
     color: COLORS.text,
+    lineHeight: 20,
   },
-  age: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: COLORS.textSecondary,
-  },
-  height: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  cardText: {
-    fontSize: 15,
-    color: COLORS.text,
-    lineHeight: 22,
-  },
-  detailRow: {
+  detailChips: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  detailChip: {
+    backgroundColor: COLORS.surface,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  detailLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  detailValue: {
-    fontSize: 14,
+  chipLabel: {
+    fontSize: 13,
     color: COLORS.text,
     fontWeight: '500',
   },
-  galleryScroll: {
-    marginTop: 8,
+  galleryRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   galleryThumb: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: 12,
-    marginRight: 8,
+  },
+  morePhotos: {
+    backgroundColor: COLORS.surfaceVariant,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  morePhotosText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
   },
   footer: {
     flexDirection: 'row',

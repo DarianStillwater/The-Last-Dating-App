@@ -2,7 +2,7 @@
 
 ## Project
 
-React Native / Expo SDK 54 dating app with a Supabase (PostgreSQL) backend. Portrait-only mobile app featuring profile matching, real-time messaging, photo verification, push notifications, and date venue suggestions.
+React Native / Expo SDK 54 dating app with a Supabase (PostgreSQL) backend. Portrait-only mobile app with a plant/garden theme throughout (onboarding = filling a planter box, matches = growing plants). Features profile matching, real-time messaging, photo verification, push notifications, and date venue suggestions.
 
 ## Commands
 
@@ -18,13 +18,14 @@ npm run test:watch        # Jest in watch mode
 
 ```
 src/
-├── screens/           # 18 screens across 6 feature areas (auth, matching, messaging, profile, settings, venues)
+├── screens/           # 20 screens across 6 feature areas (auth, matching, messaging, profile, settings, venues)
 ├── store/             # Zustand stores: auth, profile, match, message, venue, photoVerification
 ├── lib/               # supabase.ts, database.types.ts, notifications.ts
 ├── types/index.ts     # All TypeScript types (centralized)
 ├── constants/index.ts # Colors, APP_CONFIG, option lists, validators
 ├── components/        # cards/ (SwipeCard), ui/ (Button, Input, VerificationBadge), ErrorBoundary
-└── navigation/        # AppNavigator with deep linking (lastdatingapp:// scheme)
+├── navigation/        # AppNavigator with deep linking (lastdatingapp:// scheme)
+└── theme/             # plantMetaphors.ts — centralized plant-themed copy, tab labels, growth stages
 
 supabase/functions/    # Edge functions (verify-photo)
 __tests__/             # Jest test suites (components, store, utils)
@@ -58,6 +59,19 @@ __tests__/             # Jest test suites (components, store, utils)
 
 ### Imports
 Order: React → React Native → third-party libraries → relative imports
+
+### UI / Layout
+- **No scrolling on static screens.** Only dynamic list screens (Chat, Matches, Messages, Venues) use ScrollView/FlatList.
+- Static screens that would overflow are split into multiple steps (wizard pattern) or use accordion sections (one expanded at a time).
+- Onboarding uses a 6-step wizard in BasicInfoScreen, 3-step wizard in DealBreakersScreen.
+- Settings and EditProfile use accordion pattern with `expandedSection` state.
+- ProfileDetailScreen shows key info with a "See More Details" button linking to ProfileDetailsScreen.
+
+### Theme
+- All plant/garden metaphors and copy are centralized in `src/theme/plantMetaphors.ts`.
+- Tab labels: Explore, Garden, Messages, My Planter.
+- Onboarding stages map to `PLANTER_STAGES` (6 steps). Match progression uses `GROWTH_STAGES` (seed → sprout → budding → blooming → flourishing).
+- Use themed copy from `plantMetaphors.ts` — don't hardcode plant metaphors in screens.
 
 ### Database
 - All DB access through the Supabase client in `src/lib/supabase.ts` — no ORM

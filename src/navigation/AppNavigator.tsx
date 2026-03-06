@@ -32,6 +32,7 @@ import ProfileScreen from '../screens/settings/ProfileScreen';
 // Other Screens
 import ChatScreen from '../screens/messaging/ChatScreen';
 import ProfileDetailScreen from '../screens/matching/ProfileDetailScreen';
+import ProfileDetailsScreen from '../screens/matching/ProfileDetailsScreen';
 import DateSuggestionScreen from '../screens/venues/DateSuggestionScreen';
 import VenueSelectionScreen from '../screens/venues/VenueSelectionScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
@@ -142,6 +143,13 @@ const MainNavigator = () => (
       options={{
         animation: 'slide_from_bottom',
         presentation: 'modal',
+      }}
+    />
+    <MainStack.Screen
+      name="ProfileDetails"
+      component={ProfileDetailsScreen}
+      options={{
+        animation: 'slide_from_right',
       }}
     />
     <MainStack.Screen

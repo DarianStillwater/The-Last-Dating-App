@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, useProfileStore } from '../../store';
 import { supabase } from '../../lib/supabase';
 import { COLORS } from '../../constants';
-import Button from '../../components/ui/Button';
 import { getNotificationPermissionStatus, deactivateToken, reactivateToken } from '../../lib/notifications';
 
 const SettingsScreen = () => {
@@ -17,6 +16,7 @@ const SettingsScreen = () => {
 
   const [notifications, setNotifications] = useState(true);
   const [isPaused, setIsPaused] = useState(profile?.is_paused || false);
+  const [expandedSection, setExpandedSection] = useState<string | null>('notifications');
 
   useEffect(() => {
     getNotificationPermissionStatus().then(setNotifications);
@@ -64,7 +64,7 @@ const SettingsScreen = () => {
       disabled={toggle !== undefined}
     >
       <View style={[styles.settingIcon, danger && styles.settingIconDanger]}>
-        <Ionicons name={icon} size={20} color={danger ? COLORS.error : COLORS.primary} />
+        <Ionicons name={icon} size={18} color={danger ? COLORS.error : COLORS.primary} />
       </View>
       <Text style={[styles.settingLabel, danger && styles.settingLabelDanger]}>{label}</Text>
       {toggle !== undefined ? (
@@ -77,13 +77,27 @@ const SettingsScreen = () => {
       ) : value ? (
         <Text style={styles.settingValue}>{value}</Text>
       ) : (
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
       )}
     </TouchableOpacity>
   );
 
+  const SectionHeader = ({ title, sectionKey }: { title: string; sectionKey: string }) => (
+    <TouchableOpacity
+      style={styles.sectionHeader}
+      onPress={() => setExpandedSection(expandedSection === sectionKey ? null : sectionKey)}
+    >
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <Ionicons
+        name={expandedSection === sectionKey ? 'chevron-up' : 'chevron-down'}
+        size={18}
+        color={COLORS.textSecondary}
+      />
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -92,111 +106,78 @@ const SettingsScreen = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+      <View style={styles.content}>
+        <SectionHeader title="NOTIFICATIONS" sectionKey="notifications" />
+        {expandedSection === 'notifications' && (
           <SettingItem
             icon="notifications-outline"
             label="Push Notifications"
             toggle={notifications}
             onPress={handleNotificationToggle}
           />
-        </View>
+        )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <SettingItem
-            icon="pause-circle-outline"
-            label="Pause Profile"
-            toggle={isPaused}
-            onPress={handlePause}
-          />
-          <SettingItem
-            icon="mail-outline"
-            label="Email"
-            value={profile?.email}
-          />
-          <SettingItem
-            icon="lock-closed-outline"
-            label="Change Password"
-            onPress={() => {
-              Alert.alert(
-                'Reset Password',
-                'We\'ll send a password reset link to your email.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Send Link',
-                    onPress: async () => {
-                      if (profile?.email) {
-                        const { error } = await supabase.auth.resetPasswordForEmail(profile.email);
-                        if (error) {
-                          Alert.alert('Error', error.message);
-                        } else {
-                          Alert.alert('Sent', 'Check your email for a password reset link.');
+        <SectionHeader title="ACCOUNT" sectionKey="account" />
+        {expandedSection === 'account' && (
+          <>
+            <SettingItem icon="pause-circle-outline" label="Pause Profile" toggle={isPaused} onPress={handlePause} />
+            <SettingItem icon="mail-outline" label="Email" value={profile?.email} />
+            <SettingItem
+              icon="lock-closed-outline"
+              label="Change Password"
+              onPress={() => {
+                Alert.alert(
+                  'Reset Password',
+                  'We\'ll send a password reset link to your email.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Send Link',
+                      onPress: async () => {
+                        if (profile?.email) {
+                          const { error } = await supabase.auth.resetPasswordForEmail(profile.email);
+                          if (error) {
+                            Alert.alert('Error', error.message);
+                          } else {
+                            Alert.alert('Sent', 'Check your email for a password reset link.');
+                          }
                         }
-                      }
+                      },
                     },
-                  },
-                ],
-              );
-            }}
-          />
-        </View>
+                  ],
+                );
+              }}
+            />
+          </>
+        )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy & Safety</Text>
-          <SettingItem
-            icon="shield-outline"
-            label="Privacy Policy"
-            onPress={() => Alert.alert('Privacy Policy', 'Our privacy policy will be available at launch. We never sell your data to third parties.')}
-          />
-          <SettingItem
-            icon="document-text-outline"
-            label="Terms of Service"
-            onPress={() => Alert.alert('Terms of Service', 'Our terms of service will be available at launch. By using the app, you agree to treat all users with respect.')}
-          />
-          <SettingItem
-            icon="help-circle-outline"
-            label="Safety Tips"
-            onPress={() => Alert.alert(
-              'Safety Tips',
-              '• Always meet in a public place\n• Tell a friend where you\'re going\n• Trust your instincts\n• Never send money to someone you haven\'t met\n• Report suspicious behavior',
-            )}
-          />
-        </View>
+        <SectionHeader title="PRIVACY & SAFETY" sectionKey="privacy" />
+        {expandedSection === 'privacy' && (
+          <>
+            <SettingItem icon="shield-outline" label="Privacy Policy" onPress={() => Alert.alert('Privacy Policy', 'Our privacy policy will be available at launch. We never sell your data to third parties.')} />
+            <SettingItem icon="document-text-outline" label="Terms of Service" onPress={() => Alert.alert('Terms of Service', 'Our terms of service will be available at launch. By using the app, you agree to treat all users with respect.')} />
+            <SettingItem icon="help-circle-outline" label="Safety Tips" onPress={() => Alert.alert('Safety Tips', '• Always meet in a public place\n• Tell a friend where you\'re going\n• Trust your instincts\n• Never send money to someone you haven\'t met\n• Report suspicious behavior')} />
+          </>
+        )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <SettingItem
-            icon="chatbox-outline"
-            label="Contact Us"
-            onPress={() => Linking.openURL('mailto:support@lastdatingapp.com')}
-          />
-          <SettingItem
-            icon="bug-outline"
-            label="Report a Problem"
-            onPress={() => Linking.openURL('mailto:support@lastdatingapp.com?subject=Bug%20Report')}
-          />
-        </View>
+        <SectionHeader title="SUPPORT" sectionKey="support" />
+        {expandedSection === 'support' && (
+          <>
+            <SettingItem icon="chatbox-outline" label="Contact Us" onPress={() => Linking.openURL('mailto:support@lastdatingapp.com')} />
+            <SettingItem icon="bug-outline" label="Report a Problem" onPress={() => Linking.openURL('mailto:support@lastdatingapp.com?subject=Bug%20Report')} />
+          </>
+        )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Actions</Text>
-          <SettingItem
-            icon="log-out-outline"
-            label="Sign Out"
-            onPress={signOut}
-          />
-          <SettingItem
-            icon="trash-outline"
-            label="Delete Account"
-            onPress={handleDeleteAccount}
-            danger
-          />
-        </View>
+        <SectionHeader title="ACCOUNT ACTIONS" sectionKey="actions" />
+        {expandedSection === 'actions' && (
+          <>
+            <SettingItem icon="log-out-outline" label="Sign Out" onPress={signOut} />
+            <SettingItem icon="trash-outline" label="Delete Account" onPress={handleDeleteAccount} danger />
+          </>
+        )}
+      </View>
 
-        <Text style={styles.version}>The Last Dating App v1.0.0</Text>
-      </ScrollView>
+      <Text style={styles.version}>The Last Dating App v1.0.0</Text>
     </View>
   );
 };
@@ -229,16 +210,22 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   content: {
-    padding: 24,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 8,
   },
-  section: {
-    marginBottom: 32,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -246,26 +233,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    marginBottom: 8,
+    marginTop: 6,
   },
   settingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: COLORS.primaryLight + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   settingIconDanger: {
     backgroundColor: COLORS.error + '15',
   },
   settingLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: COLORS.text,
   },
@@ -273,14 +260,14 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
   settingValue: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   version: {
     fontSize: 12,
     color: COLORS.textLight,
     textAlign: 'center',
-    marginTop: 16,
+    paddingVertical: 8,
   },
 });
 

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -26,6 +25,9 @@ const DealBreakersScreen = () => {
   const profileData = route.params?.profileData || {};
   const { dealBreakers, fetchDealBreakers, updateDealBreakers } = useProfileStore();
 
+  const [step, setStep] = useState(1);
+  const totalSteps = 3;
+
   const [minAge, setMinAge] = useState(21);
   const [maxAge, setMaxAge] = useState(40);
   const [minHeight, setMinHeight] = useState(150);
@@ -39,7 +41,6 @@ const DealBreakersScreen = () => {
   const [diet, setDiet] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // In edit mode, load existing deal breakers and pre-populate state
   useEffect(() => {
     if (editMode) {
       fetchDealBreakers().then(() => {
@@ -60,8 +61,6 @@ const DealBreakersScreen = () => {
     }
   }, [editMode]);
 
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-
   const toggleArray = (arr: string[], value: string, setter: (arr: string[]) => void) => {
     if (arr.includes(value)) {
       setter(arr.filter((v) => v !== value));
@@ -80,34 +79,6 @@ const DealBreakersScreen = () => {
     </TouchableOpacity>
   );
 
-  const renderSection = (
-    title: string,
-    key: string,
-    summary: string,
-    content: React.ReactNode
-  ) => {
-    const isExpanded = expandedSection === key;
-    return (
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.sectionHeader}
-          onPress={() => setExpandedSection(isExpanded ? null : key)}
-        >
-          <View>
-            <Text style={styles.sectionTitle}>{title}</Text>
-            <Text style={styles.sectionSummary}>{summary}</Text>
-          </View>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={24}
-            color={COLORS.textSecondary}
-          />
-        </TouchableOpacity>
-        {isExpanded && <View style={styles.sectionContent}>{content}</View>}
-      </View>
-    );
-  };
-
   const currentSelections = {
     min_age: minAge,
     max_age: maxAge,
@@ -122,8 +93,12 @@ const DealBreakersScreen = () => {
     acceptable_diets: diet.length > 0 ? diet : null,
   };
 
-  const handleNext = () => {
-    navigation.navigate('Bio', { profileData, dealBreakers: currentSelections });
+  const handleFinish = () => {
+    if (editMode) {
+      handleSave();
+    } else {
+      navigation.navigate('Bio', { profileData, dealBreakers: currentSelections });
+    }
   };
 
   const handleSave = async () => {
@@ -137,20 +112,193 @@ const DealBreakersScreen = () => {
     }
   };
 
+  const handleNext = () => {
+    if (step < totalSteps) {
+      setStep(step + 1);
+    } else {
+      handleFinish();
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    } else if (editMode) {
+      navigation.goBack();
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const renderStep1 = () => (
+    <>
+      <Text style={styles.stepTitle}>The Essentials</Text>
+
+      <Text style={styles.fieldLabel}>Age Range</Text>
+      <View style={styles.rangeLabels}>
+        <Text style={styles.rangeValue}>{minAge}</Text>
+        <Text style={styles.rangeValue}>{maxAge}</Text>
+      </View>
+      <Slider
+        style={styles.slider}
+        minimumValue={AGE_RANGE.MIN}
+        maximumValue={maxAge - 1}
+        step={1}
+        value={minAge}
+        onValueChange={setMinAge}
+        minimumTrackTintColor={COLORS.primary}
+        maximumTrackTintColor={COLORS.border}
+        thumbTintColor={COLORS.primary}
+      />
+      <Slider
+        style={styles.slider}
+        minimumValue={minAge + 1}
+        maximumValue={AGE_RANGE.MAX}
+        step={1}
+        value={maxAge}
+        onValueChange={setMaxAge}
+        minimumTrackTintColor={COLORS.primary}
+        maximumTrackTintColor={COLORS.border}
+        thumbTintColor={COLORS.primary}
+      />
+
+      <Text style={styles.fieldLabel}>Height</Text>
+      <View style={styles.rangeLabels}>
+        <Text style={styles.rangeValue}>{cmToFeetInches(minHeight)}</Text>
+        <Text style={styles.rangeValue}>{cmToFeetInches(maxHeight)}</Text>
+      </View>
+      <Slider
+        style={styles.slider}
+        minimumValue={HEIGHT_RANGE.MIN_CM}
+        maximumValue={maxHeight - 1}
+        step={1}
+        value={minHeight}
+        onValueChange={setMinHeight}
+        minimumTrackTintColor={COLORS.primary}
+        maximumTrackTintColor={COLORS.border}
+        thumbTintColor={COLORS.primary}
+      />
+      <Slider
+        style={styles.slider}
+        minimumValue={minHeight + 1}
+        maximumValue={HEIGHT_RANGE.MAX_CM}
+        step={1}
+        value={maxHeight}
+        onValueChange={setMaxHeight}
+        minimumTrackTintColor={COLORS.primary}
+        maximumTrackTintColor={COLORS.border}
+        thumbTintColor={COLORS.primary}
+      />
+
+      <Text style={styles.fieldLabel}>Distance</Text>
+      <View style={styles.chipsContainer}>
+        {DISTANCE_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value.toString(),
+            opt.label,
+            maxDistance === opt.value,
+            () => setMaxDistance(opt.value)
+          )
+        )}
+      </View>
+    </>
+  );
+
+  const renderStep2 = () => (
+    <>
+      <Text style={styles.stepTitle}>Cultural Preferences</Text>
+
+      <Text style={styles.fieldLabel}>Ethnicity</Text>
+      <View style={styles.chipsContainer}>
+        {ETHNICITY_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value,
+            opt.label,
+            ethnicities.includes(opt.value),
+            () => toggleArray(ethnicities, opt.value, setEthnicities)
+          )
+        )}
+      </View>
+
+      <Text style={styles.fieldLabel}>Religion</Text>
+      <View style={styles.chipsContainer}>
+        {RELIGION_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value,
+            opt.label,
+            religions.includes(opt.value),
+            () => toggleArray(religions, opt.value, setReligions)
+          )
+        )}
+      </View>
+
+      <Text style={styles.fieldLabel}>Children</Text>
+      <View style={styles.chipsContainer}>
+        {OFFSPRING_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value,
+            opt.label,
+            offspring.includes(opt.value),
+            () => toggleArray(offspring, opt.value, setOffspring)
+          )
+        )}
+      </View>
+    </>
+  );
+
+  const renderStep3 = () => (
+    <>
+      <Text style={styles.stepTitle}>Lifestyle Preferences</Text>
+
+      <Text style={styles.fieldLabel}>Smoking</Text>
+      <View style={styles.chipsContainer}>
+        {SMOKER_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value,
+            opt.label,
+            smoker.includes(opt.value),
+            () => toggleArray(smoker, opt.value, setSmoker)
+          )
+        )}
+      </View>
+
+      <Text style={styles.fieldLabel}>Drinking</Text>
+      <View style={styles.chipsContainer}>
+        {ALCOHOL_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value,
+            opt.label,
+            alcohol.includes(opt.value),
+            () => toggleArray(alcohol, opt.value, setAlcohol)
+          )
+        )}
+      </View>
+
+      <Text style={styles.fieldLabel}>Diet</Text>
+      <View style={styles.chipsContainer}>
+        {DIET_OPTIONS.map((opt) =>
+          renderChip(
+            opt.value,
+            opt.label,
+            diet.includes(opt.value),
+            () => toggleArray(diet, opt.value, setDiet)
+          )
+        )}
+      </View>
+
+      <View style={styles.note}>
+        <Ionicons name="information-circle-outline" size={18} color={COLORS.textSecondary} />
+        <Text style={styles.noteText}>
+          Leave sections empty to see all options.
+        </Text>
+      </View>
+    </>
+  );
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Progress bar — setup only */}
-      {!editMode && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '75%' }]} />
-          </View>
-          <Text style={styles.progressText}>Step 3 of 4</Text>
-        </View>
-      )}
-
-      {/* Edit mode header */}
-      {editMode && (
+      {/* Header */}
+      {editMode ? (
         <View style={styles.editHeader}>
           <TouchableOpacity style={styles.editBackButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -158,234 +306,51 @@ const DealBreakersScreen = () => {
           <Text style={styles.editHeaderTitle}>Deal Breakers</Text>
           <View style={{ width: 40 }} />
         </View>
+      ) : (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: '60%' }]} />
+          </View>
+          <Text style={styles.progressText}>Step 3 of 5</Text>
+        </View>
       )}
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>{ONBOARDING_COPY.dealBreakers.title}</Text>
-        <Text style={styles.subtitle}>
-          We only show you profiles that match your criteria, and you'll only appear to people whose criteria you match.
-        </Text>
+      {/* Step indicator */}
+      <View style={styles.stepIndicator}>
+        {[1, 2, 3].map((s) => (
+          <View
+            key={s}
+            style={[styles.stepDot, s === step && styles.stepDotActive, s < step && styles.stepDotDone]}
+          />
+        ))}
+      </View>
 
-        {/* Age Range */}
-        {renderSection(
-          'Age Range',
-          'age',
-          `${minAge} - ${maxAge} years old`,
-          <View style={styles.rangeContainer}>
-            <View style={styles.rangeLabels}>
-              <Text style={styles.rangeValue}>{minAge}</Text>
-              <Text style={styles.rangeValue}>{maxAge}</Text>
-            </View>
-            <View style={styles.sliderContainer}>
-              <Slider
-                style={styles.slider}
-                minimumValue={AGE_RANGE.MIN}
-                maximumValue={maxAge - 1}
-                step={1}
-                value={minAge}
-                onValueChange={setMinAge}
-                minimumTrackTintColor={COLORS.primary}
-                maximumTrackTintColor={COLORS.border}
-                thumbTintColor={COLORS.primary}
-              />
-              <Slider
-                style={styles.slider}
-                minimumValue={minAge + 1}
-                maximumValue={AGE_RANGE.MAX}
-                step={1}
-                value={maxAge}
-                onValueChange={setMaxAge}
-                minimumTrackTintColor={COLORS.primary}
-                maximumTrackTintColor={COLORS.border}
-                thumbTintColor={COLORS.primary}
-              />
-            </View>
-          </View>
-        )}
+      {/* Heading */}
+      <View style={styles.headingContainer}>
+        <Text style={styles.headingTitle}>{ONBOARDING_COPY.dealBreakers.title}</Text>
+        <Text style={styles.headingSubtitle}>{ONBOARDING_COPY.dealBreakers.subtitle}</Text>
+      </View>
 
-        {/* Height Range */}
-        {renderSection(
-          'Height',
-          'height',
-          `${cmToFeetInches(minHeight)} - ${cmToFeetInches(maxHeight)}`,
-          <View style={styles.rangeContainer}>
-            <View style={styles.rangeLabels}>
-              <Text style={styles.rangeValue}>{cmToFeetInches(minHeight)}</Text>
-              <Text style={styles.rangeValue}>{cmToFeetInches(maxHeight)}</Text>
-            </View>
-            <View style={styles.sliderContainer}>
-              <Slider
-                style={styles.slider}
-                minimumValue={HEIGHT_RANGE.MIN_CM}
-                maximumValue={maxHeight - 1}
-                step={1}
-                value={minHeight}
-                onValueChange={setMinHeight}
-                minimumTrackTintColor={COLORS.primary}
-                maximumTrackTintColor={COLORS.border}
-                thumbTintColor={COLORS.primary}
-              />
-              <Slider
-                style={styles.slider}
-                minimumValue={minHeight + 1}
-                maximumValue={HEIGHT_RANGE.MAX_CM}
-                step={1}
-                value={maxHeight}
-                onValueChange={setMaxHeight}
-                minimumTrackTintColor={COLORS.primary}
-                maximumTrackTintColor={COLORS.border}
-                thumbTintColor={COLORS.primary}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* Distance */}
-        {renderSection(
-          'Distance',
-          'distance',
-          maxDistance >= 500 ? 'Anywhere' : `Within ${maxDistance} miles`,
-          <View style={styles.chipsContainer}>
-            {DISTANCE_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value.toString(),
-                opt.label,
-                maxDistance === opt.value,
-                () => setMaxDistance(opt.value)
-              )
-            )}
-          </View>
-        )}
-
-        {/* Ethnicity */}
-        {renderSection(
-          'Ethnicity',
-          'ethnicity',
-          ethnicities.length === 0 ? 'Any' : `${ethnicities.length} selected`,
-          <View style={styles.chipsContainer}>
-            {ETHNICITY_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value,
-                opt.label,
-                ethnicities.includes(opt.value),
-                () => toggleArray(ethnicities, opt.value, setEthnicities)
-              )
-            )}
-          </View>
-        )}
-
-        {/* Religion */}
-        {renderSection(
-          'Religion',
-          'religion',
-          religions.length === 0 ? 'Any' : `${religions.length} selected`,
-          <View style={styles.chipsContainer}>
-            {RELIGION_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value,
-                opt.label,
-                religions.includes(opt.value),
-                () => toggleArray(religions, opt.value, setReligions)
-              )
-            )}
-          </View>
-        )}
-
-        {/* Children */}
-        {renderSection(
-          'Children',
-          'offspring',
-          offspring.length === 0 ? 'Any' : `${offspring.length} selected`,
-          <View style={styles.chipsContainer}>
-            {OFFSPRING_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value,
-                opt.label,
-                offspring.includes(opt.value),
-                () => toggleArray(offspring, opt.value, setOffspring)
-              )
-            )}
-          </View>
-        )}
-
-        {/* Smoking */}
-        {renderSection(
-          'Smoking',
-          'smoker',
-          smoker.length === 0 ? 'Any' : `${smoker.length} selected`,
-          <View style={styles.chipsContainer}>
-            {SMOKER_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value,
-                opt.label,
-                smoker.includes(opt.value),
-                () => toggleArray(smoker, opt.value, setSmoker)
-              )
-            )}
-          </View>
-        )}
-
-        {/* Alcohol */}
-        {renderSection(
-          'Drinking',
-          'alcohol',
-          alcohol.length === 0 ? 'Any' : `${alcohol.length} selected`,
-          <View style={styles.chipsContainer}>
-            {ALCOHOL_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value,
-                opt.label,
-                alcohol.includes(opt.value),
-                () => toggleArray(alcohol, opt.value, setAlcohol)
-              )
-            )}
-          </View>
-        )}
-
-        {/* Diet */}
-        {renderSection(
-          'Diet',
-          'diet',
-          diet.length === 0 ? 'Any' : `${diet.length} selected`,
-          <View style={styles.chipsContainer}>
-            {DIET_OPTIONS.map((opt) =>
-              renderChip(
-                opt.value,
-                opt.label,
-                diet.includes(opt.value),
-                () => toggleArray(diet, opt.value, setDiet)
-              )
-            )}
-          </View>
-        )}
-
-        <View style={styles.note}>
-          <Ionicons name="information-circle-outline" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.noteText}>
-            Leave sections empty to see all options. Remember: you'll only see people who also match your profile.
-          </Text>
-        </View>
-      </ScrollView>
+      {/* Content */}
+      <View style={styles.contentArea}>
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+      </View>
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        {!editMode && (
-          <Button
-            title="Back"
-            onPress={() => navigation.goBack()}
-            variant="outline"
-            style={styles.backButton}
-          />
-        )}
         <Button
-          title={editMode ? 'Save Changes' : 'Next: Add Bio'}
-          onPress={editMode ? handleSave : handleNext}
+          title="Back"
+          onPress={handleBack}
+          variant="outline"
+          style={styles.backButton}
+        />
+        <Button
+          title={step === totalSteps ? (editMode ? 'Save Changes' : 'Next: Add Bio') : 'Continue'}
+          onPress={handleNext}
           loading={isSaving}
-          style={editMode ? styles.fullButton : styles.nextButton}
+          style={styles.nextButton}
         />
       </View>
     </View>
@@ -399,7 +364,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   progressBar: {
     height: 4,
@@ -416,129 +381,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     textAlign: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  section: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  sectionSummary: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  sectionContent: {
-    padding: 16,
-    paddingTop: 0,
-  },
-  rangeContainer: {
-    gap: 8,
-  },
-  rangeLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
-  rangeValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  sliderContainer: {
-    gap: 8,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceVariant,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  chipSelected: {
-    backgroundColor: COLORS.primaryLight + '20',
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  chipTextSelected: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  note: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    padding: 16,
-    backgroundColor: COLORS.surfaceVariant,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  noteText: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    lineHeight: 18,
-  },
-  footer: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.background,
-  },
-  backButton: {
-    flex: 1,
-  },
-  nextButton: {
-    flex: 2,
-  },
-  fullButton: {
-    flex: 1,
   },
   editHeader: {
     flexDirection: 'row',
@@ -561,6 +403,120 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
+  },
+  stepIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.border,
+  },
+  stepDotActive: {
+    backgroundColor: COLORS.primary,
+    width: 24,
+  },
+  stepDotDone: {
+    backgroundColor: COLORS.primary,
+  },
+  headingContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 4,
+  },
+  headingTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  headingSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  contentArea: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  stepTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  rangeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  rangeValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  slider: {
+    width: '100%',
+    height: 36,
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceVariant,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  chipSelected: {
+    backgroundColor: COLORS.primaryLight + '20',
+    borderColor: COLORS.primary,
+  },
+  chipText: {
+    fontSize: 13,
+    color: COLORS.text,
+  },
+  chipTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  note: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  noteText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  footer: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.background,
+  },
+  backButton: {
+    flex: 1,
+  },
+  nextButton: {
+    flex: 2,
   },
 });
 

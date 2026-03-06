@@ -6,7 +6,6 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,20 +43,15 @@ const BioScreen = () => {
       {/* Progress bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '100%' }]} />
+          <View style={[styles.progressFill, { width: '80%' }]} />
         </View>
-        <Text style={styles.progressText}>Step 4 of 4</Text>
+        <Text style={styles.progressText}>Step 4 of 5</Text>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={styles.contentArea}>
         <Text style={styles.title}>Tell your story</Text>
         <Text style={styles.subtitle}>
-          Help others get to know you. What makes you unique?
+          Be authentic and mention specific interests — it helps people connect with you.
         </Text>
 
         {/* Bio */}
@@ -75,7 +69,7 @@ const BioScreen = () => {
             value={bio}
             onChangeText={(text) => setBio(text.slice(0, APP_CONFIG.MAX_BIO_LENGTH))}
             multiline
-            numberOfLines={6}
+            numberOfLines={4}
             textAlignVertical="top"
           />
         </View>
@@ -95,32 +89,11 @@ const BioScreen = () => {
             value={thingsToKnow}
             onChangeText={(text) => setThingsToKnow(text.slice(0, APP_CONFIG.MAX_THINGS_TO_KNOW_LENGTH))}
             multiline
-            numberOfLines={4}
+            numberOfLines={3}
             textAlignVertical="top"
           />
         </View>
-
-        {/* Tips */}
-        <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}>💡 Tips for a great bio</Text>
-          <View style={styles.tip}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>Be authentic - show your real personality</Text>
-          </View>
-          <View style={styles.tip}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>Mention specific interests and hobbies</Text>
-          </View>
-          <View style={styles.tip}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>Share what you're looking for in a connection</Text>
-          </View>
-          <View style={styles.tip}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>Keep it positive and engaging</Text>
-          </View>
-        </View>
-      </ScrollView>
+      </View>
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -147,7 +120,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   progressBar: {
     height: 4,
@@ -165,12 +138,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  scrollView: {
+  contentArea: {
     flex: 1,
-  },
-  scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
   },
   title: {
     fontSize: 28,
@@ -182,10 +152,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     lineHeight: 20,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   inputGroup: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   labelRow: {
     flexDirection: 'row',
@@ -208,39 +178,12 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: COLORS.text,
-    minHeight: 150,
+    minHeight: 120,
     borderWidth: 2,
     borderColor: COLORS.border,
   },
   smallerTextArea: {
-    minHeight: 100,
-  },
-  tipsContainer: {
-    backgroundColor: COLORS.surfaceVariant,
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 8,
-  },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
-  },
-  tip: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  tipBullet: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginRight: 8,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+    minHeight: 80,
   },
   footer: {
     flexDirection: 'row',

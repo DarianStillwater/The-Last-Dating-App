@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Image,
 } from 'react-native';
@@ -42,21 +41,18 @@ const ProfileScreen = () => {
   const MenuItem = ({ icon, label, onPress, showBadge, danger }: any) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <View style={[styles.menuIcon, danger && styles.menuIconDanger]}>
-        <Ionicons name={icon} size={22} color={danger ? COLORS.error : COLORS.primary} />
+        <Ionicons name={icon} size={20} color={danger ? COLORS.error : COLORS.primary} />
       </View>
       <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
       <View style={styles.menuRight}>
         {showBadge && <View style={styles.badge} />}
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 8 }]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Planter</Text>
@@ -76,15 +72,15 @@ const ProfileScreen = () => {
         >
           <Ionicons
             name={isExpired ? 'warning' : 'time-outline'}
-            size={20}
+            size={18}
             color={isExpired ? COLORS.error : COLORS.warning}
           />
           <Text style={[styles.bannerText, { color: isExpired ? COLORS.error : COLORS.warning }]}>
             {isExpired
-              ? 'Your photo has expired. Take a new selfie to stay visible.'
-              : `Your photo expires in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}. Update it soon.`}
+              ? 'Photo expired. Take a new selfie.'
+              : `Photo expires in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`}
           </Text>
-          <Ionicons name="chevron-forward" size={16} color={isExpired ? COLORS.error : COLORS.warning} />
+          <Ionicons name="chevron-forward" size={14} color={isExpired ? COLORS.error : COLORS.warning} />
         </TouchableOpacity>
       )}
 
@@ -102,12 +98,6 @@ const ProfileScreen = () => {
             size="medium"
             style={styles.verificationBadge}
           />
-          <TouchableOpacity
-            style={styles.editPhotoButton}
-            onPress={() => navigation.navigate('EditPhotos', { editMode: true })}
-          >
-            <Ionicons name="leaf" size={16} color={COLORS.surface} />
-          </TouchableOpacity>
         </View>
 
         <Text style={styles.profileName}>{currentUser.first_name}, {age}</Text>
@@ -116,14 +106,14 @@ const ProfileScreen = () => {
         </Text>
 
         {currentUser.bio && (
-          <Text style={styles.bio} numberOfLines={3}>{currentUser.bio}</Text>
+          <Text style={styles.bio} numberOfLines={2}>{currentUser.bio}</Text>
         )}
 
         <TouchableOpacity
           style={styles.editProfileButton}
           onPress={() => navigation.navigate('EditProfile')}
         >
-          <Ionicons name="pencil" size={18} color={COLORS.primary} />
+          <Ionicons name="pencil" size={16} color={COLORS.primary} />
           <Text style={styles.editProfileText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
@@ -150,7 +140,6 @@ const ProfileScreen = () => {
 
       {/* Menu Items */}
       <View style={styles.menuSection}>
-        <Text style={styles.menuSectionTitle}>Profile</Text>
         <MenuItem
           icon="person-outline"
           label="Edit Profile"
@@ -166,19 +155,13 @@ const ProfileScreen = () => {
           label="Deal Breakers"
           onPress={() => navigation.navigate('EditDealBreakers', { editMode: true })}
         />
-      </View>
-
-      <View style={styles.menuSection}>
         <MenuItem
           icon="settings-outline"
           label="Settings"
           onPress={() => navigation.navigate('Settings')}
         />
       </View>
-
-      {/* App version */}
-      <Text style={styles.version}>Version 1.0.0</Text>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -186,15 +169,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  content: {
     paddingHorizontal: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   headerTitle: {
     fontSize: 28,
@@ -202,19 +183,19 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   settingsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   profileCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 20,
+    padding: 16,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -223,121 +204,99 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     position: 'relative',
-    marginBottom: 16,
-  },
-  mainPhoto: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: COLORS.primary,
-  },
-  editPhotoButton: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.surface,
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  profileDetails: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
     marginBottom: 12,
   },
+  mainPhoto: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  profileDetails: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
   bio: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 18,
+    marginBottom: 12,
   },
   editProfileButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     backgroundColor: COLORS.primaryLight + '20',
   },
   editProfileText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.primary,
   },
   statsContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
   },
   statDivider: {
     width: 1,
     backgroundColor: COLORS.border,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
   },
   menuSection: {
-    marginBottom: 24,
-  },
-  menuSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    gap: 6,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    marginBottom: 8,
   },
   menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: COLORS.primaryLight + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   menuIconDanger: {
     backgroundColor: COLORS.error + '15',
   },
   menuLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: COLORS.text,
   },
@@ -347,7 +306,7 @@ const styles = StyleSheet.create({
   menuRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   badge: {
     width: 8,
@@ -355,19 +314,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: COLORS.primary,
   },
-  version: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginTop: 8,
-  },
   expirationBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 14,
+    gap: 8,
+    padding: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   bannerExpired: {
     backgroundColor: COLORS.error + '15',
@@ -377,9 +330,9 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   verificationBadge: {
     position: 'absolute',

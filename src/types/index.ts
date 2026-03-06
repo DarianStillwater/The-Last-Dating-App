@@ -424,6 +424,7 @@ export type MainTabParamList = {
 export type DiscoverStackParamList = {
   DiscoverMain: undefined;
   ProfileDetail: { userId: string; profile?: UserProfile };
+  ProfileDetails: { userId: string };
 };
 
 export type MatchesStackParamList = {

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -58,7 +57,7 @@ const SignUpScreen = () => {
     if (!validate()) return;
 
     const { error } = await signUpWithEmail(email, password);
-    
+
     if (error) {
       Alert.alert('Sign Up Failed', error);
     }
@@ -83,12 +82,11 @@ const SignUpScreen = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
         ]}
-        keyboardShouldPersistTaps="handled"
       >
         <TouchableOpacity
           style={styles.backButton}
@@ -178,7 +176,7 @@ const SignUpScreen = () => {
             <Text style={styles.footerLink}>Sign In</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -188,9 +186,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
     paddingHorizontal: 24,
+    justifyContent: 'space-between',
   },
   backButton: {
     width: 48,
@@ -199,16 +198,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
     shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  header: {
-    marginBottom: 40,
-  },
+  header: {},
   title: {
     fontSize: 32,
     fontWeight: '800',
@@ -219,16 +215,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
   },
-  form: {
-    marginBottom: 32,
-  },
+  form: {},
   signUpButton: {
-    marginTop: 16,
+    marginTop: 8,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
   },
   dividerLine: {
     flex: 1,
@@ -244,7 +237,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 20,
-    marginBottom: 32,
   },
   socialButton: {
     width: 64,
@@ -262,11 +254,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   terms: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 24,
+    lineHeight: 16,
   },
   termsLink: {
     color: COLORS.primary,
@@ -275,7 +266,6 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 'auto',
   },
   footerText: {
     fontSize: 14,

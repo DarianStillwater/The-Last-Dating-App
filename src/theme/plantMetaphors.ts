@@ -16,13 +16,14 @@ export const MATCH_METAPHORS = {
   garden: 'Your Garden',
 } as const;
 
-// Onboarding: filling a planter box
+// Onboarding: filling a planter box (6 steps matching BasicInfoScreen)
 export const PLANTER_STAGES = {
   1: { label: 'Choose Your Pot', icon: 'cube-outline' },
   2: { label: 'Fill With Soil', icon: 'layers-outline' },
-  3: { label: 'Select Your Seeds', icon: 'ellipse-outline' },
-  4: { label: 'Water It', icon: 'water-outline' },
-  5: { label: 'Plant It', icon: 'leaf-outline' },
+  3: { label: 'Add Fertilizer', icon: 'flask-outline' },
+  4: { label: 'Select Your Seeds', icon: 'ellipse-outline' },
+  5: { label: 'Water It', icon: 'water-outline' },
+  6: { label: 'Plant It', icon: 'leaf-outline' },
 } as const;
 
 // Match progression: plant growth stages
@@ -92,11 +93,12 @@ export const ONBOARDING_COPY = {
     title: 'Tell us about yourself',
   },
   photos: {
-    title: 'Fill With Soil',
+    title: 'Show Your Colors',
     emptySlot: 'Add a photo',
   },
   dealBreakers: {
-    title: 'Select Your Seeds',
+    title: 'Your Deal Breakers',
+    subtitle: "People outside these preferences won't appear",
   },
   bio: {
     title: 'Your Story',

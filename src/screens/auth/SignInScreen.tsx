@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -49,7 +48,7 @@ const SignInScreen = () => {
     if (!validate()) return;
 
     const { error } = await signInWithEmail(email, password);
-    
+
     if (error) {
       Alert.alert('Sign In Failed', error);
     }
@@ -74,12 +73,11 @@ const SignInScreen = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
         ]}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
         <TouchableOpacity
@@ -166,7 +164,7 @@ const SignInScreen = () => {
             <Text style={styles.footerLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -176,9 +174,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
     paddingHorizontal: 24,
+    justifyContent: 'space-between',
   },
   backButton: {
     width: 48,
@@ -187,7 +186,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
     shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -195,7 +193,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   header: {
-    marginBottom: 40,
+    marginTop: 8,
   },
   title: {
     fontSize: 32,
@@ -207,12 +205,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
   },
-  form: {
-    marginBottom: 32,
-  },
+  form: {},
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 16,
     marginTop: -8,
   },
   forgotPasswordText: {
@@ -221,12 +217,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   signInButton: {
-    marginTop: 8,
+    marginTop: 4,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
   },
   dividerLine: {
     flex: 1,
@@ -242,7 +237,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 20,
-    marginBottom: 40,
   },
   socialButton: {
     width: 64,
@@ -262,7 +256,6 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 'auto',
   },
   footerText: {
     fontSize: 14,
