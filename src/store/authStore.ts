@@ -17,8 +17,8 @@ interface AuthState {
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithPhone: (phone: string) => Promise<{ error: string | null }>;
   verifyPhone: (phone: string, token: string) => Promise<{ error: string | null }>;
-  signInWithGoogle: () => Promise<{ error: string | null }>;
-  signInWithApple: () => Promise<{ error: string | null }>;
+  signInWithGoogleIdToken: (idToken: string) => Promise<{ error: string | null }>;
+  signInWithAppleIdToken: (idToken: string, nonce: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   updateLastActive: () => Promise<void>;
@@ -249,16 +249,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signInWithGoogle: async () => {
+  signInWithGoogleIdToken: async (idToken: string) => {
     try {
       set({ isLoading: true });
-      
-      const { error } = await supabase.auth.signInWithOAuth({
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
+        token: idToken,
       });
 
       if (error) {
         return { error: error.message };
+      }
+
+      if (data.session) {
+        // Fetch or create user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+
+        const isProfileComplete = !!(
+          profile?.first_name &&
+          profile?.birth_date &&
+          profile?.gender &&
+          profile?.main_photo_url
+        );
+
+        set({
+          session: data.session,
+          user: profile as UserProfile | null,
+          isAuthenticated: true,
+          isProfileComplete,
+        });
+
+        // Sync profile into profileStore
+        if (profile) {
+          const { useProfileStore } = require('./profileStore');
+          useProfileStore.setState({ profile: profile as UserProfile });
+        }
       }
 
       return { error: null };
@@ -269,16 +299,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signInWithApple: async () => {
+  signInWithAppleIdToken: async (idToken: string, nonce: string) => {
     try {
       set({ isLoading: true });
-      
-      const { error } = await supabase.auth.signInWithOAuth({
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
+        token: idToken,
+        nonce,
       });
 
       if (error) {
         return { error: error.message };
+      }
+
+      if (data.session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+
+        const isProfileComplete = !!(
+          profile?.first_name &&
+          profile?.birth_date &&
+          profile?.gender &&
+          profile?.main_photo_url
+        );
+
+        set({
+          session: data.session,
+          user: profile as UserProfile | null,
+          isAuthenticated: true,
+          isProfileComplete,
+        });
+
+        if (profile) {
+          const { useProfileStore } = require('./profileStore');
+          useProfileStore.setState({ profile: profile as UserProfile });
+        }
       }
 
       return { error: null };

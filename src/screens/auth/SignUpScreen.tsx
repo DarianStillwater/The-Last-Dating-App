@@ -15,13 +15,17 @@ import { Ionicons } from '@expo/vector-icons';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
+import { useAppleAuth } from '../../hooks/useAppleAuth';
 import { COLORS } from '../../constants';
 import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
 
 const SignUpScreen = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { signUpWithEmail, signInWithGoogle, signInWithApple, isLoading } = useAuthStore();
+  const { signUpWithEmail, isLoading } = useAuthStore();
+  const { signInWithGoogle } = useGoogleAuth();
+  const { signInWithApple } = useAppleAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,18 +67,12 @@ const SignUpScreen = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    const { error } = await signInWithGoogle();
-    if (error) {
-      Alert.alert('Sign Up Failed', error);
-    }
+  const handleGoogleSignIn = () => {
+    signInWithGoogle();
   };
 
-  const handleAppleSignIn = async () => {
-    const { error } = await signInWithApple();
-    if (error) {
-      Alert.alert('Sign Up Failed', error);
-    }
+  const handleAppleSignIn = () => {
+    signInWithApple();
   };
 
   return (

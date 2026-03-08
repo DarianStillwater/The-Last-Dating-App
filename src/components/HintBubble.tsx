@@ -10,7 +10,6 @@ import { COMPANION_HINTS } from '../theme/plantMetaphors';
 import { COLORS } from '../constants';
 import { HintKey } from '../types';
 import { useHint } from '../hooks/useHint';
-import PlantCompanion from './PlantCompanion';
 
 interface HintBubbleProps {
   hintKey: HintKey;
@@ -52,12 +51,8 @@ const HintBubble: React.FC<HintBubbleProps> = ({ hintKey }) => {
           <View style={styles.bubble}>
             <Text style={styles.message}>{hint.message}</Text>
           </View>
-          <View style={styles.tail} />
         </TouchableOpacity>
       </Animated.View>
-      <View style={styles.companionWrapper}>
-        <PlantCompanion growthStage={3} animate={visible} />
-      </View>
     </View>
   );
 };
@@ -70,9 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     zIndex: 1000,
   },
-  bubbleWrapper: {
-    marginBottom: 4,
-  },
+  bubbleWrapper: {},
   bubble: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
@@ -90,22 +83,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
     lineHeight: 20,
-  },
-  tail: {
-    width: 0,
-    height: 0,
-    alignSelf: 'flex-end',
-    marginRight: 20,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: COLORS.border,
-  },
-  companionWrapper: {
-    transform: [{ scale: 0.75 }],
-    marginTop: -10,
   },
 });
 

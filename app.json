@@ -45,7 +45,8 @@
       "expo-location",
       "expo-notifications",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

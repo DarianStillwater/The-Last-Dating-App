@@ -19,6 +19,7 @@ export const PLANT_COLORS = {
   info: '#0288D1',
   overlay: 'rgba(27, 67, 50, 0.5)',
   cardShadow: 'rgba(45, 106, 79, 0.1)',
+  splashBackground: '#2D4A3E',
 };
 
 export const SPACING = {

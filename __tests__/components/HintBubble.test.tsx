@@ -20,17 +20,6 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 
-// Mock PlantCompanion to avoid SVG issues in tests
-jest.mock('../../src/components/PlantCompanion', () => {
-  const mockReact = require('react');
-  const { View } = require('react-native');
-  return {
-    __esModule: true,
-    default: (props: Record<string, unknown>) =>
-      mockReact.createElement(View, { testID: 'plant-companion', ...props }),
-  };
-});
-
 import HintBubble from '../../src/components/HintBubble';
 
 beforeEach(() => {
@@ -51,12 +40,6 @@ describe('HintBubble', () => {
     expect(
       getByText(/Swipe right if you feel a spark/),
     ).toBeTruthy();
-  });
-
-  it('renders PlantCompanion when visible', () => {
-    mockVisible = true;
-    const { getByTestId } = render(<HintBubble hintKey="discover_swipe" />);
-    expect(getByTestId('plant-companion')).toBeTruthy();
   });
 
   it('calls dismiss when bubble is pressed', () => {
