@@ -5,3 +5,4 @@ export { useMessageStore } from './messageStore';
 export { useVenueStore } from './venueStore';
 export { usePhotoVerificationStore } from './photoVerificationStore';
 export { useTrustStore } from './trustStore';
+export { useCommunityDealBreakerStore } from './communityDealBreakerStore';

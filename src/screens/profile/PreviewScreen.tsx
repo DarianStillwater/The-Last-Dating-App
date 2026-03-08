@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import Button from '../../components/ui/Button';
-import { useProfileStore, usePhotoVerificationStore, useAuthStore } from '../../store';
+import { useProfileStore, usePhotoVerificationStore, useAuthStore, useCommunityDealBreakerStore } from '../../store';
 import { uploadPhotoFromUri } from '../../lib/supabase';
 import * as Location from 'expo-location';
 import { addDays } from 'date-fns';
@@ -36,7 +36,7 @@ const PreviewScreen = () => {
   const insets = useSafeAreaInsets();
   const { createProfile, updateDealBreakers } = useProfileStore();
 
-  const { profileData, dealBreakers } = route.params || {};
+  const { profileData, dealBreakers, communityDealBreakerAnswers } = route.params || {};
   const [isCreating, setIsCreating] = useState(false);
 
   const getLabel = (options: { value: string; label: string }[], value: string) =>
@@ -102,6 +102,11 @@ const PreviewScreen = () => {
       }
 
       await updateDealBreakers(dealBreakers);
+
+      // Save community dealbreaker answers if any
+      if (communityDealBreakerAnswers && communityDealBreakerAnswers.length > 0) {
+        await useCommunityDealBreakerStore.getState().saveAnswersAndPreferences(communityDealBreakerAnswers);
+      }
 
       if (profileData.mainPhoto && profileData.mainPhotoMetadata) {
         usePhotoVerificationStore.getState().uploadAndVerifyPhoto(

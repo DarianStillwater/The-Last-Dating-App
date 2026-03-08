@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,8 +15,9 @@ import Slider from '@react-native-community/slider';
 
 import Button from '../../components/ui/Button';
 import { COLORS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DIET_OPTIONS, DISTANCE_OPTIONS, cmToFeetInches, AGE_RANGE, HEIGHT_RANGE } from '../../constants';
-import { useProfileStore } from '../../store';
-import { ONBOARDING_COPY } from '../../theme/plantMetaphors';
+import { useProfileStore, useCommunityDealBreakerStore } from '../../store';
+import { ONBOARDING_COPY, COMMUNITY_DEALBREAKER_COPY } from '../../theme/plantMetaphors';
+import type { CommunityAnswerWithPreference } from '../../types';
 
 const DealBreakersScreen = () => {
   const navigation = useNavigation<any>();
@@ -25,8 +28,11 @@ const DealBreakersScreen = () => {
   const profileData = route.params?.profileData || {};
   const { dealBreakers, fetchDealBreakers, updateDealBreakers } = useProfileStore();
 
+  const { approvedQuestions, fetchApprovedQuestions, myAnswers, myPreferences, fetchMyAnswers, fetchMyPreferences, saveAnswersAndPreferences } = useCommunityDealBreakerStore();
+
   const [step, setStep] = useState(1);
-  const totalSteps = 3;
+  const hasApprovedQuestions = approvedQuestions.length > 0;
+  const totalSteps = hasApprovedQuestions ? 4 : 3;
 
   const [minAge, setMinAge] = useState(21);
   const [maxAge, setMaxAge] = useState(40);
@@ -40,6 +46,37 @@ const DealBreakersScreen = () => {
   const [alcohol, setAlcohol] = useState<string[]>([]);
   const [diet, setDiet] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [communityAnswers, setCommunityAnswers] = useState<Record<string, string>>({});
+  const [communityPreferences, setCommunityPreferences] = useState<Record<string, string[] | null>>({});
+  const [communityLoading, setCommunityLoading] = useState(true);
+
+  // Fetch community questions on mount
+  useEffect(() => {
+    const loadCommunity = async () => {
+      setCommunityLoading(true);
+      await fetchApprovedQuestions();
+      if (editMode) {
+        await fetchMyAnswers();
+        await fetchMyPreferences();
+      }
+      setCommunityLoading(false);
+    };
+    loadCommunity();
+  }, []);
+
+  // Pre-fill community answers/preferences in edit mode
+  useEffect(() => {
+    if (editMode && myAnswers.length > 0) {
+      const answers: Record<string, string> = {};
+      myAnswers.forEach((a) => { answers[a.question_id] = a.answer_value; });
+      setCommunityAnswers(answers);
+    }
+    if (editMode && myPreferences.length > 0) {
+      const prefs: Record<string, string[] | null> = {};
+      myPreferences.forEach((p) => { prefs[p.question_id] = p.acceptable_answers; });
+      setCommunityPreferences(prefs);
+    }
+  }, [editMode, myAnswers, myPreferences]);
 
   useEffect(() => {
     if (editMode) {
@@ -93,23 +130,50 @@ const DealBreakersScreen = () => {
     acceptable_diets: diet.length > 0 ? diet : null,
   };
 
+  const getCommunityAnswersForSave = (): CommunityAnswerWithPreference[] => {
+    return approvedQuestions
+      .filter((q) => communityAnswers[q.id])
+      .map((q) => ({
+        questionId: q.id,
+        answerValue: communityAnswers[q.id],
+        acceptableAnswers: communityPreferences[q.id] ?? null,
+      }));
+  };
+
   const handleFinish = () => {
     if (editMode) {
       handleSave();
     } else {
-      navigation.navigate('Bio', { profileData, dealBreakers: currentSelections });
+      navigation.navigate('Bio', {
+        profileData,
+        dealBreakers: currentSelections,
+        communityDealBreakerAnswers: getCommunityAnswersForSave(),
+      });
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     const { error } = await updateDealBreakers(currentSelections);
-    setIsSaving(false);
     if (error) {
+      setIsSaving(false);
       Alert.alert('Error', error);
-    } else {
-      navigation.goBack();
+      return;
     }
+
+    // Save community dealbreaker answers/preferences
+    const communityItems = getCommunityAnswersForSave();
+    if (communityItems.length > 0) {
+      const { error: commError } = await saveAnswersAndPreferences(communityItems);
+      if (commError) {
+        setIsSaving(false);
+        Alert.alert('Error', commError);
+        return;
+      }
+    }
+
+    setIsSaving(false);
+    navigation.goBack();
   };
 
   const handleNext = () => {
@@ -295,6 +359,81 @@ const DealBreakersScreen = () => {
     </>
   );
 
+  const toggleCommunityPreference = (questionId: string, value: string) => {
+    const current = communityPreferences[questionId] || [];
+    if (current === null) {
+      setCommunityPreferences({ ...communityPreferences, [questionId]: [value] });
+    } else if (current.includes(value)) {
+      const filtered = current.filter((v) => v !== value);
+      setCommunityPreferences({ ...communityPreferences, [questionId]: filtered.length > 0 ? filtered : null });
+    } else {
+      setCommunityPreferences({ ...communityPreferences, [questionId]: [...current, value] });
+    }
+  };
+
+  const renderStep4 = () => {
+    if (communityLoading) {
+      return (
+        <View style={styles.communityLoading}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        </View>
+      );
+    }
+
+    if (approvedQuestions.length === 0) {
+      return (
+        <View style={styles.communityEmpty}>
+          <Ionicons name="leaf-outline" size={48} color={COLORS.textSecondary} />
+          <Text style={styles.communityEmptyTitle}>{COMMUNITY_DEALBREAKER_COPY.noQuestionsOnboarding.title}</Text>
+          <Text style={styles.communityEmptySubtitle}>{COMMUNITY_DEALBREAKER_COPY.noQuestionsOnboarding.subtitle}</Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text style={styles.stepTitle}>{COMMUNITY_DEALBREAKER_COPY.onboardingStepTitle}</Text>
+        <Text style={styles.communitySubtitle}>{COMMUNITY_DEALBREAKER_COPY.onboardingStepSubtitle}</Text>
+
+        {approvedQuestions.map((question) => (
+          <View key={question.id} style={styles.communityQuestion}>
+            <Text style={styles.communityQuestionText}>{question.question_text}</Text>
+
+            <Text style={styles.fieldLabel}>{COMMUNITY_DEALBREAKER_COPY.answerPrompt}</Text>
+            <View style={styles.chipsContainer}>
+              {question.answer_options.map((opt) =>
+                renderChip(
+                  opt.value,
+                  opt.label,
+                  communityAnswers[question.id] === opt.value,
+                  () => setCommunityAnswers({ ...communityAnswers, [question.id]: opt.value })
+                )
+              )}
+            </View>
+
+            <Text style={styles.fieldLabel}>{COMMUNITY_DEALBREAKER_COPY.preferencePrompt}</Text>
+            <View style={styles.chipsContainer}>
+              <TouchableOpacity
+                style={[styles.chip, (communityPreferences[question.id] === null || communityPreferences[question.id] === undefined) && styles.chipSelected]}
+                onPress={() => setCommunityPreferences({ ...communityPreferences, [question.id]: null })}
+              >
+                <Text style={[styles.chipText, (communityPreferences[question.id] === null || communityPreferences[question.id] === undefined) && styles.chipTextSelected]}>Any</Text>
+              </TouchableOpacity>
+              {question.answer_options.map((opt) =>
+                renderChip(
+                  `pref_${opt.value}`,
+                  opt.label,
+                  communityPreferences[question.id]?.includes(opt.value) || false,
+                  () => toggleCommunityPreference(question.id, opt.value)
+                )
+              )}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    );
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -309,15 +448,15 @@ const DealBreakersScreen = () => {
       ) : (
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '60%' }]} />
+            <View style={[styles.progressFill, { width: hasApprovedQuestions ? '50%' : '60%' }]} />
           </View>
-          <Text style={styles.progressText}>Step 3 of 5</Text>
+          <Text style={styles.progressText}>Step 3 of {hasApprovedQuestions ? 6 : 5}</Text>
         </View>
       )}
 
       {/* Step indicator */}
       <View style={styles.stepIndicator}>
-        {[1, 2, 3].map((s) => (
+        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
           <View
             key={s}
             style={[styles.stepDot, s === step && styles.stepDotActive, s < step && styles.stepDotDone]}
@@ -336,6 +475,7 @@ const DealBreakersScreen = () => {
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
+        {step === 4 && renderStep4()}
       </View>
 
       {/* Footer */}
@@ -347,7 +487,7 @@ const DealBreakersScreen = () => {
           style={styles.backButton}
         />
         <Button
-          title={step === totalSteps ? (editMode ? 'Save Changes' : 'Next: Add Bio') : 'Continue'}
+          title={step === totalSteps ? (editMode ? 'Save Changes' : 'Next: Add Bio') : (step === 3 && hasApprovedQuestions ? 'Next: Community Rules' : 'Continue')}
           onPress={handleNext}
           loading={isSaving}
           style={styles.nextButton}
@@ -517,6 +657,45 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     flex: 2,
+  },
+  communityLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  communityEmpty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  communityEmptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  communityEmptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  communitySubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 16,
+  },
+  communityQuestion: {
+    marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  communityQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 8,
   },
 });
 

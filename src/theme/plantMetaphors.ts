@@ -163,3 +163,24 @@ export const ONBOARDING_COPY = {
     button: 'Plant It!',
   },
 } as const;
+
+export const COMMUNITY_DEALBREAKER_COPY = {
+  sectionTitle: 'Garden Rules',
+  subtitle: 'The community decides what matters most',
+  submitPrompt: 'Propose a new garden rule',
+  votePrompt: 'Vote for the rules that matter to you',
+  cycleInfo: (daysLeft: number) => `${daysLeft} day${daysLeft === 1 ? '' : 's'} until the next rule is planted`,
+  newQuestionNotification: 'A new garden rule has been planted! Answer it to refine your matches.',
+  answerPrompt: 'Share your stance on this garden rule',
+  preferencePrompt: 'What do you need from your match?',
+  onboardingStepTitle: 'Community Rules',
+  onboardingStepSubtitle: 'Answer questions the community voted on',
+  emptyState: {
+    title: 'No garden rules yet',
+    subtitle: 'Be the first to propose what matters in your garden',
+  },
+  noQuestionsOnboarding: {
+    title: 'No community rules yet',
+    subtitle: "They'll appear here as the community votes them in!",
+  },
+} as const;

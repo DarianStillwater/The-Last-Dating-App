@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import HintBubble from '../../components/HintBubble';
-import { useAuthStore, useProfileStore, usePhotoVerificationStore } from '../../store';
+import { useAuthStore, useProfileStore, usePhotoVerificationStore, useCommunityDealBreakerStore } from '../../store';
 import { COLORS, calculateAge, cmToFeetInches } from '../../constants';
 import VerificationBadge from '../../components/ui/VerificationBadge';
 import type { ProfileVerificationStatus } from '../../types';
@@ -23,6 +23,11 @@ const ProfileScreen = () => {
   const { profile } = useProfileStore();
 
   const { checkPhotoExpiration } = usePhotoVerificationStore();
+  const { unansweredQuestions, fetchUnansweredQuestions } = useCommunityDealBreakerStore();
+
+  React.useEffect(() => {
+    fetchUnansweredQuestions();
+  }, []);
 
   const currentUser = profile || user;
 
@@ -155,6 +160,12 @@ const ProfileScreen = () => {
           icon="options-outline"
           label="Deal Breakers"
           onPress={() => navigation.navigate('EditDealBreakers', { editMode: true })}
+        />
+        <MenuItem
+          icon="people-outline"
+          label="Community Deal Breakers"
+          onPress={() => navigation.navigate('CommunityDealBreakers')}
+          showBadge={unansweredQuestions.length > 0}
         />
         <MenuItem
           icon="settings-outline"

@@ -509,7 +509,67 @@ export type ProfileStackParamList = {
   PhotoVerification: { photoUri: string; isMain: boolean; deviceMetadata: PhotoDeviceMetadata };
   PostDateReview: { matchId: string; reviewedUserId: string };
   PhoneVerification: undefined;
+  CommunityDealBreakers: undefined;
+  CommunityDealBreakerSubmit: { cycleId: string };
+  AnswerCommunityDealBreaker: { questionId: string };
+  CommunityDealBreakerAdmin: { cycleId: string; submissionId: string };
 };
+
+// Community Dealbreaker Types
+export type CycleStatus = 'active' | 'voting_closed' | 'pending_approval' | 'approved' | 'rejected';
+export type AnswerType = 'yes_no' | 'multi_choice';
+
+export interface CommunityDealBreakerCycle {
+  id: string;
+  cycle_number: number;
+  started_at: string;
+  ends_at: string;
+  status: CycleStatus;
+  winning_submission_id?: string;
+  approved_question_id?: string;
+}
+
+export interface CommunityDealBreakerSubmission {
+  id: string;
+  cycle_id: string;
+  submitted_by: string;
+  question_text: string;
+  vote_count: number;
+  status: 'active' | 'merged';
+  merged_into_id?: string;
+  created_at: string;
+  has_voted?: boolean;
+}
+
+export interface CommunityDealBreakerQuestion {
+  id: string;
+  cycle_id: string;
+  question_text: string;
+  answer_type: AnswerType;
+  answer_options: { value: string; label: string }[];
+  is_active: boolean;
+  approved_at?: string;
+}
+
+export interface CommunityDealBreakerAnswer {
+  id: string;
+  question_id: string;
+  user_id: string;
+  answer_value: string;
+}
+
+export interface CommunityDealBreakerPreference {
+  id: string;
+  question_id: string;
+  user_id: string;
+  acceptable_answers: string[] | null;
+}
+
+export interface CommunityAnswerWithPreference {
+  questionId: string;
+  answerValue: string;
+  acceptableAnswers: string[] | null;
+}
 
 // Form Types
 export interface SignUpForm {

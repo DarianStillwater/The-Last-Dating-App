@@ -39,6 +39,8 @@ export default function App() {
             navigationRef.navigate('Chat' as never, { matchId: data.matchId } as never);
           } else if (data?.type === 'new_match') {
             navigationRef.navigate('Tabs' as never, { screen: 'Matches' } as never);
+          } else if (data?.type === 'community_dealbreaker' && data?.questionId) {
+            navigationRef.navigate('AnswerCommunityDealBreaker' as never, { questionId: data.questionId } as never);
           }
         }
       });

@@ -19,7 +19,7 @@ const BioScreen = () => {
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
 
-  const { profileData, dealBreakers } = route.params || {};
+  const { profileData, dealBreakers, communityDealBreakerAnswers } = route.params || {};
 
   const [bio, setBio] = useState('');
   const [thingsToKnow, setThingsToKnow] = useState('');
@@ -32,6 +32,7 @@ const BioScreen = () => {
         things_to_know: thingsToKnow.trim() || null,
       },
       dealBreakers,
+      communityDealBreakerAnswers,
     });
   };
 

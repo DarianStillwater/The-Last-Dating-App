@@ -39,6 +39,10 @@ import EditProfileScreen from '../screens/settings/EditProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import PostDateReviewScreen from '../screens/profile/PostDateReviewScreen';
 import PhoneVerificationScreen from '../screens/settings/PhoneVerificationScreen';
+import CommunityDealBreakersScreen from '../screens/profile/CommunityDealBreakersScreen';
+import CommunityDealBreakerSubmitScreen from '../screens/profile/CommunityDealBreakerSubmitScreen';
+import AnswerCommunityDealBreakerScreen from '../screens/profile/AnswerCommunityDealBreakerScreen';
+import CommunityDealBreakerAdminScreen from '../screens/profile/CommunityDealBreakerAdminScreen';
 
 import type {
   RootStackParamList,
@@ -217,6 +221,34 @@ const MainNavigator = () => (
     <MainStack.Screen
       name="PhoneVerification"
       component={PhoneVerificationScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
+    <MainStack.Screen
+      name="CommunityDealBreakers"
+      component={CommunityDealBreakersScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
+    <MainStack.Screen
+      name="CommunityDealBreakerSubmit"
+      component={CommunityDealBreakerSubmitScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
+    <MainStack.Screen
+      name="AnswerCommunityDealBreaker"
+      component={AnswerCommunityDealBreakerScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
+    <MainStack.Screen
+      name="CommunityDealBreakerAdmin"
+      component={CommunityDealBreakerAdminScreen}
       options={{
         animation: 'slide_from_right',
       }}
