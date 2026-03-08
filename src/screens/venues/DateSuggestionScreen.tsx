@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, VENUE_CATEGORIES } from '../../constants';
-import Button from '../../components/ui/Button';
+import { COLORS, VENUE_CATEGORY_GROUPS } from '../../constants';
 
 const DateSuggestionScreen = () => {
   const insets = useSafeAreaInsets();
@@ -22,40 +21,35 @@ const DateSuggestionScreen = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.contentContainer}>
         <View style={styles.iconContainer}>
           <Ionicons name="flower" size={64} color={COLORS.secondary} />
         </View>
-        
+
         <Text style={styles.title}>Time to Bloom Together!</Text>
         <Text style={styles.subtitle}>
           You've been chatting with your match.{'\n'}
           Now let's help you pick the perfect spot.
         </Text>
 
-        <Text style={styles.sectionTitle}>What kind of date?</Text>
-        
-        <View style={styles.categoriesGrid}>
-          {VENUE_CATEGORIES.slice(0, 8).map((cat) => (
-            <TouchableOpacity
-              key={cat.value}
-              style={styles.categoryItem}
-              onPress={() => navigation.navigate('VenueSelection', { matchId, category: cat.value })}
-            >
-              <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
-              <Text style={styles.categoryLabel}>{cat.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Button
-          title="See All Options"
-          variant="outline"
-          onPress={() => navigation.navigate('VenueSelection', { matchId })}
-          fullWidth
-          style={{ marginTop: 16 }}
-        />
-      </View>
+        {VENUE_CATEGORY_GROUPS.map((group) => (
+          <View key={group.title} style={styles.groupSection}>
+            <Text style={styles.groupTitle}>{group.title}</Text>
+            <View style={styles.categoriesGrid}>
+              {group.categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.value}
+                  style={styles.categoryItem}
+                  onPress={() => navigation.navigate('VenueSelection', { matchId, category: cat.value })}
+                >
+                  <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
+                  <Text style={styles.categoryLabel}>{cat.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -85,10 +79,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
-  content: {
+  scrollContent: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 24,
     paddingTop: 24,
+    paddingBottom: 40,
   },
   iconContainer: {
     width: 120,
@@ -112,13 +109,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 18,
+  groupSection: {
+    marginBottom: 20,
+  },
+  groupTitle: {
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   categoriesGrid: {
     flexDirection: 'row',

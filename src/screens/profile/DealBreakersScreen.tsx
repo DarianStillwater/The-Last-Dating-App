@@ -17,6 +17,8 @@ import Button from '../../components/ui/Button';
 import { COLORS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DIET_OPTIONS, DISTANCE_OPTIONS, cmToFeetInches, AGE_RANGE, HEIGHT_RANGE } from '../../constants';
 import { useProfileStore, useCommunityDealBreakerStore } from '../../store';
 import { ONBOARDING_COPY, COMMUNITY_DEALBREAKER_COPY } from '../../theme/plantMetaphors';
+import { triggerFeedback } from '../../services/feedback';
+import { useToast } from '../../components/ui/Toast';
 import type { CommunityAnswerWithPreference } from '../../types';
 
 const DealBreakersScreen = () => {
@@ -173,11 +175,14 @@ const DealBreakersScreen = () => {
     }
 
     setIsSaving(false);
+    triggerFeedback('save');
+    showToast('Deal breakers saved!');
     navigation.goBack();
   };
 
   const handleNext = () => {
     if (step < totalSteps) {
+      triggerFeedback('onboardingStep');
       setStep(step + 1);
     } else {
       handleFinish();

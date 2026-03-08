@@ -203,25 +203,44 @@ export const calculateAge = (birthDate: string): number => {
   return age;
 };
 
-// Venue Categories
-export const VENUE_CATEGORIES = [
-  { value: 'indian', label: 'Indian', emoji: '🍛' },
-  { value: 'thai', label: 'Thai', emoji: '🍜' },
-  { value: 'french', label: 'French', emoji: '🥐' },
-  { value: 'korean', label: 'Korean', emoji: '🍱' },
-  { value: 'japanese', label: 'Japanese', emoji: '🍣' },
-  { value: 'italian', label: 'Italian', emoji: '🍝' },
-  { value: 'mexican', label: 'Mexican', emoji: '🌮' },
-  { value: 'american', label: 'American', emoji: '🍔' },
-  { value: 'chinese', label: 'Chinese', emoji: '🥡' },
-  { value: 'mediterranean', label: 'Mediterranean', emoji: '🥙' },
-  { value: 'vietnamese', label: 'Vietnamese', emoji: '🍲' },
-  { value: 'bar', label: 'Bar / Cocktails', emoji: '🍸' },
-  { value: 'coffee', label: 'Coffee / Café', emoji: '☕' },
-  { value: 'activity', label: 'Activity', emoji: '🎯' },
-  { value: 'outdoor', label: 'Outdoor', emoji: '🌳' },
-  { value: 'entertainment', label: 'Entertainment', emoji: '🎭' },
+// Venue Categories — grouped by type
+export const VENUE_CATEGORY_GROUPS = [
+  {
+    title: 'Drinks',
+    categories: [
+      { value: 'coffee', label: 'Coffee / Café', emoji: '☕' },
+      { value: 'bar', label: 'Bar / Cocktails', emoji: '🍸' },
+      { value: 'brewery', label: 'Brewery', emoji: '🍺' },
+    ],
+  },
+  {
+    title: 'Dining',
+    categories: [
+      { value: 'italian', label: 'Italian', emoji: '🍝' },
+      { value: 'japanese', label: 'Japanese', emoji: '🍣' },
+      { value: 'mexican', label: 'Mexican', emoji: '🌮' },
+      { value: 'american', label: 'American', emoji: '🍔' },
+      { value: 'thai', label: 'Thai', emoji: '🍜' },
+      { value: 'korean', label: 'Korean', emoji: '🍱' },
+      { value: 'french', label: 'French', emoji: '🥐' },
+      { value: 'indian', label: 'Indian', emoji: '🍛' },
+      { value: 'chinese', label: 'Chinese', emoji: '🥡' },
+      { value: 'mediterranean', label: 'Mediterranean', emoji: '🥙' },
+      { value: 'vietnamese', label: 'Vietnamese', emoji: '🍲' },
+    ],
+  },
+  {
+    title: 'Activities & Events',
+    categories: [
+      { value: 'activity', label: 'Activity', emoji: '🎯' },
+      { value: 'entertainment', label: 'Entertainment', emoji: '🎭' },
+      { value: 'spa', label: 'Spa / Wellness', emoji: '💆' },
+    ],
+  },
 ];
+
+// Flat array for backward compatibility (venueStore, types, etc.)
+export const VENUE_CATEGORIES = VENUE_CATEGORY_GROUPS.flatMap((g) => g.categories);
 
 // Report Reasons
 export const REPORT_REASONS = [

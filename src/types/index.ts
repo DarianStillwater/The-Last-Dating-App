@@ -284,23 +284,24 @@ export interface MessageLimit {
 }
 
 // Venue Types
-export type VenueCategory = 
-  | 'indian' 
-  | 'thai' 
-  | 'french' 
-  | 'korean' 
-  | 'japanese' 
-  | 'italian' 
-  | 'mexican' 
-  | 'american' 
+export type VenueCategory =
+  | 'indian'
+  | 'thai'
+  | 'french'
+  | 'korean'
+  | 'japanese'
+  | 'italian'
+  | 'mexican'
+  | 'american'
   | 'chinese'
   | 'mediterranean'
   | 'vietnamese'
   | 'bar'
   | 'coffee'
+  | 'brewery'
   | 'activity'
-  | 'outdoor'
-  | 'entertainment';
+  | 'entertainment'
+  | 'spa';
 
 export type PaymentTier = 'subscription' | 'per_impression' | 'monthly_package';
 export type PartnershipSlot = 1 | 2 | 3;

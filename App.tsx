@@ -9,6 +9,8 @@ import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import AppNavigator, { navigationRef } from './src/navigation/AppNavigator';
 import AnimatedSplash from './src/components/AnimatedSplash';
+import { ToastProvider } from './src/components/ui/Toast';
+import { initFeedback, cleanupFeedback } from './src/services/feedback';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +30,11 @@ export default function App() {
       SplashScreen.hideAsync();
     }
   }, [splashReady]);
+
+  useEffect(() => {
+    initFeedback();
+    return () => { cleanupFeedback(); };
+  }, []);
 
   useEffect(() => {
     notificationResponseListener.current =
@@ -60,8 +67,10 @@ export default function App() {
       {fontsLoaded && !showSplash && (
         <ErrorBoundary>
           <SafeAreaProvider>
-            <StatusBar style="dark" />
-            <AppNavigator />
+            <ToastProvider>
+              <StatusBar style="dark" />
+              <AppNavigator />
+            </ToastProvider>
           </SafeAreaProvider>
         </ErrorBoundary>
       )}

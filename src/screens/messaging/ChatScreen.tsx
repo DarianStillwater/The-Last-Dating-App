@@ -18,9 +18,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
 import HintBubble from '../../components/HintBubble';
+import AnimatedPress from '../../components/ui/AnimatedPress';
 import { useMessageStore, useMatchStore, useAuthStore, useTrustStore } from '../../store';
 import { COLORS, APP_CONFIG, TRUST_CONFIG, calculateAge } from '../../constants';
 import { TRUST_COPY } from '../../theme/plantMetaphors';
+import { triggerFeedback } from '../../services/feedback';
 import type { Message } from '../../types';
 
 const ChatScreen = () => {
@@ -65,9 +67,18 @@ const ChatScreen = () => {
     }
   }, [matchId, match?.date_accepted_at]);
 
+  const prevMessageCount = useRef(messages.length);
   useEffect(() => {
     // Scroll to bottom when new messages arrive
     if (messages.length > 0) {
+      // Play receive feedback for new messages from other user
+      if (messages.length > prevMessageCount.current) {
+        const latest = messages[messages.length - 1];
+        if (latest?.sender_id !== user?.id) {
+          triggerFeedback('messageReceive');
+        }
+      }
+      prevMessageCount.current = messages.length;
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -80,8 +91,10 @@ const ChatScreen = () => {
     const { error } = await sendMessage(matchId, inputText.trim());
     
     if (error) {
+      triggerFeedback('error');
       Alert.alert('Unable to send', error);
     } else {
+      triggerFeedback('messageSend');
       setInputText('');
     }
   };
@@ -317,17 +330,17 @@ const ChatScreen = () => {
           maxLength={500}
           editable={canSend}
         />
-        <TouchableOpacity
-          style={[styles.sendButton, (!inputText.trim() || !canSend || isSending) && styles.sendButtonDisabled]}
+        <AnimatedPress
           onPress={handleSend}
           disabled={!inputText.trim() || !canSend || isSending}
+          style={[styles.sendButton, (!inputText.trim() || !canSend || isSending) && styles.sendButtonDisabled]}
         >
           {isSending ? (
             <ActivityIndicator size="small" color={COLORS.surface} />
           ) : (
             <Ionicons name="send" size={20} color={COLORS.surface} />
           )}
-        </TouchableOpacity>
+        </AnimatedPress>
       </View>
       <HintBubble hintKey="chat_limits" />
     </KeyboardAvoidingView>

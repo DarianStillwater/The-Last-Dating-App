@@ -17,6 +17,7 @@ import PlantCompanion from '../../components/PlantCompanion';
 import GrowingVine from '../../components/GrowingVine';
 import { COLORS, GENDER_OPTIONS, LOOKING_FOR_OPTIONS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DRUGS_OPTIONS, DIET_OPTIONS, INCOME_OPTIONS, HEIGHT_RANGE, cmToFeetInches } from '../../constants';
 import { PLANTER_STAGES } from '../../theme/plantMetaphors';
+import { triggerFeedback } from '../../services/feedback';
 
 const BasicInfoScreen = () => {
   const navigation = useNavigation<any>();
@@ -70,6 +71,7 @@ const BasicInfoScreen = () => {
 
   const handleNext = () => {
     if (step < totalSteps) {
+      triggerFeedback('onboardingStep');
       setStep(step + 1);
     } else {
       navigation.navigate('Photos', {

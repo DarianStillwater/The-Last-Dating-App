@@ -16,7 +16,6 @@ import Input from '../../components/ui/Input';
 import { useProfileStore } from '../../store';
 import {
   COLORS,
-  GENDER_OPTIONS,
   LOOKING_FOR_OPTIONS,
   ETHNICITY_OPTIONS,
   RELIGION_OPTIONS,
@@ -26,22 +25,20 @@ import {
   DRUGS_OPTIONS,
   DIET_OPTIONS,
   INCOME_OPTIONS,
-  HEIGHT_RANGE,
-  cmToFeetInches,
   APP_CONFIG,
 } from '../../constants';
+import { triggerFeedback } from '../../services/feedback';
+import { useToast } from '../../components/ui/Toast';
 
-type Section = 'basic' | 'background' | 'lifestyle' | 'professional' | 'about';
+type Section = 'preferences' | 'background' | 'lifestyle' | 'professional' | 'about';
 
 const EditProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { profile, updateProfile } = useProfileStore();
+  const { showToast } = useToast();
 
-  const [firstName, setFirstName] = useState('');
-  const [gender, setGender] = useState('');
   const [lookingFor, setLookingFor] = useState<string[]>([]);
-  const [heightCm, setHeightCm] = useState(170);
   const [ethnicity, setEthnicity] = useState('');
   const [religion, setReligion] = useState('');
   const [offspring, setOffspring] = useState('');
@@ -54,14 +51,11 @@ const EditProfileScreen: React.FC = () => {
   const [bio, setBio] = useState('');
   const [thingsToKnow, setThingsToKnow] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<Section>('basic');
+  const [expandedSection, setExpandedSection] = useState<Section>('preferences');
 
   useEffect(() => {
     if (profile) {
-      setFirstName(profile.first_name || '');
-      setGender(profile.gender || '');
       setLookingFor(profile.looking_for || []);
-      setHeightCm(profile.height_cm || 170);
       setEthnicity(profile.ethnicity || '');
       setReligion(profile.religion || '');
       setOffspring(profile.offspring || '');
@@ -85,8 +79,6 @@ const EditProfileScreen: React.FC = () => {
   };
 
   const canSave =
-    firstName.length >= 2 &&
-    gender !== '' &&
     lookingFor.length > 0 &&
     ethnicity !== '' &&
     religion !== '' &&
@@ -101,10 +93,7 @@ const EditProfileScreen: React.FC = () => {
 
     setIsSaving(true);
     const { error } = await updateProfile({
-      first_name: firstName,
-      gender: gender as any,
       looking_for: lookingFor as any,
-      height_cm: heightCm,
       ethnicity: ethnicity as any,
       religion: religion as any,
       offspring: offspring as any,
@@ -120,8 +109,11 @@ const EditProfileScreen: React.FC = () => {
     setIsSaving(false);
 
     if (error) {
+      triggerFeedback('error');
       Alert.alert('Error', error);
     } else {
+      triggerFeedback('save');
+      showToast('Profile saved!');
       navigation.goBack();
     }
   };
@@ -141,7 +133,7 @@ const EditProfileScreen: React.FC = () => {
     options.find((o) => o.value === value)?.label || value;
 
   const toggleSection = (section: Section) => {
-    setExpandedSection(expandedSection === section ? 'basic' : section);
+    setExpandedSection(expandedSection === section ? 'preferences' : section);
   };
 
   const SectionHeader = ({ title, section, summary }: { title: string; section: Section; summary: string }) => (
@@ -184,28 +176,12 @@ const EditProfileScreen: React.FC = () => {
       </View>
 
       <View style={styles.contentArea}>
-        {/* Basic */}
-        <SectionHeader title="Basic Info" section="basic" summary={`${firstName}, ${getLabel(GENDER_OPTIONS, gender)}, ${cmToFeetInches(heightCm)}`} />
-        {expandedSection === 'basic' && (
+        {/* Preferences */}
+        <SectionHeader title="Looking For" section="preferences" summary={lookingFor.map((v) => getLabel(LOOKING_FOR_OPTIONS, v)).join(', ') || 'Not set'} />
+        {expandedSection === 'preferences' && (
           <View style={styles.sectionContent}>
-            <Input placeholder="First name" value={firstName} onChangeText={setFirstName} />
-            <Text style={styles.fieldLabel}>Gender</Text>
-            <View style={styles.optionsGrid}>
-              {GENDER_OPTIONS.map((opt) => renderOption(opt.value, opt.label, gender === opt.value, () => setGender(opt.value)))}
-            </View>
-            <Text style={styles.fieldLabel}>Looking For</Text>
             <View style={styles.optionsGrid}>
               {LOOKING_FOR_OPTIONS.map((opt) => renderOption(opt.value, opt.label, lookingFor.includes(opt.value), () => toggleLookingFor(opt.value)))}
-            </View>
-            <Text style={styles.fieldLabel}>Height</Text>
-            <View style={styles.heightContainer}>
-              <TouchableOpacity style={styles.heightButton} onPress={() => setHeightCm(Math.max(HEIGHT_RANGE.MIN_CM, heightCm - 1))}>
-                <Ionicons name="remove" size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <Text style={styles.heightValue}>{cmToFeetInches(heightCm)}</Text>
-              <TouchableOpacity style={styles.heightButton} onPress={() => setHeightCm(Math.min(HEIGHT_RANGE.MAX_CM, heightCm + 1))}>
-                <Ionicons name="add" size={20} color={COLORS.text} />
-              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -407,28 +383,6 @@ const styles = StyleSheet.create({
   optionTextSelected: {
     color: COLORS.primary,
     fontWeight: '600',
-  },
-  heightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    paddingVertical: 8,
-  },
-  heightButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  heightValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
   },
   textArea: {
     backgroundColor: COLORS.surfaceVariant,

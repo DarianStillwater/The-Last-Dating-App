@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { UserProfile } from '../../types';
 import { COLORS, calculateAge, cmToFeetInches } from '../../constants';
+import { triggerFeedback } from '../../services/feedback';
+import AnimatedPress from '../ui/AnimatedPress';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -90,6 +92,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       duration: SWIPE_OUT_DURATION,
       useNativeDriver: false,
     }).start(() => {
+      triggerFeedback('swipeRight');
       onSwipeRight();
       position.setValue({ x: 0, y: 0 });
     });
@@ -101,6 +104,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       duration: SWIPE_OUT_DURATION,
       useNativeDriver: false,
     }).start(() => {
+      triggerFeedback('swipeLeft');
       onSwipeLeft();
       position.setValue({ x: 0, y: 0 });
     });
@@ -227,19 +231,13 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       {/* Action buttons */}
       {isFirst && (
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.nopeButton]}
-            onPress={swipeLeft}
-          >
+          <AnimatedPress onPress={swipeLeft} style={[styles.actionButton, styles.nopeButton]}>
             <Ionicons name="close" size={32} color={COLORS.error} />
-          </TouchableOpacity>
+          </AnimatedPress>
 
-          <TouchableOpacity
-            style={[styles.actionButton, styles.likeButton]}
-            onPress={swipeRight}
-          >
+          <AnimatedPress onPress={swipeRight} style={[styles.actionButton, styles.likeButton]}>
             <Ionicons name="heart" size={32} color={COLORS.success} />
-          </TouchableOpacity>
+          </AnimatedPress>
         </View>
       )}
     </Animated.View>

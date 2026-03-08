@@ -19,6 +19,8 @@ import { COLORS, APP_CONFIG } from '../../constants';
 import { usePhotoVerificationStore, useAuthStore, useProfileStore } from '../../store';
 import { uploadPhotoFromUri, supabase } from '../../lib/supabase';
 import type { PhotoDeviceMetadata } from '../../types';
+import { triggerFeedback } from '../../services/feedback';
+import { useToast } from '../../components/ui/Toast';
 
 type VerificationState = 'camera' | 'uploading' | 'done' | 'error';
 
@@ -107,6 +109,7 @@ const PhotoVerificationScreen = () => {
       // Refresh the local profile store so photo expiration check reflects the new photo
       await useProfileStore.getState().fetchProfile();
 
+      triggerFeedback('photoUpload');
       setState('done');
 
       // Fire off verification silently in the background

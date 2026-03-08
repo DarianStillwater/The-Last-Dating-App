@@ -12,17 +12,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import LottieView from 'lottie-react-native';
 import HintBubble from '../../components/HintBubble';
 import SwipeCard from '../../components/cards/SwipeCard';
 import Button from '../../components/ui/Button';
 import SproutPop from '../../components/SproutPop';
 import { useMatchStore, useAuthStore, usePhotoVerificationStore } from '../../store';
 import { COLORS, APP_CONFIG } from '../../constants';
+import { triggerFeedback } from '../../services/feedback';
+import { useToast } from '../../components/ui/Toast';
 
 const DiscoverScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const [showSprout, setShowSprout] = useState(false);
+  const [showMatchCelebration, setShowMatchCelebration] = useState(false);
+  const { showToast } = useToast();
   const { user } = useAuthStore();
   const { checkPhotoExpiration } = usePhotoVerificationStore();
   const {
@@ -58,6 +63,10 @@ const DiscoverScreen = () => {
 
     if (match) {
       setShowSprout(true);
+      setShowMatchCelebration(true);
+      triggerFeedback('match');
+      showToast(`You and ${match.other_user?.first_name} are a match!`, 'success');
+      setTimeout(() => setShowMatchCelebration(false), 2500);
       Alert.alert(
         'It\'s a Match!',
         `You and ${match.other_user?.first_name} liked each other!`,
@@ -201,7 +210,17 @@ const DiscoverScreen = () => {
         </View>
       </View>
 
-      {/* Sprout animation on match */}
+      {/* Match celebration animations */}
+      {showMatchCelebration && (
+        <View style={styles.lottieOverlay}>
+          <LottieView
+            source={require('../../../assets/animations/match-celebration.json')}
+            autoPlay
+            loop={false}
+            style={{ width: 300, height: 300 }}
+          />
+        </View>
+      )}
       {showSprout && (
         <View style={styles.sproutOverlay}>
           <SproutPop visible={showSprout} onComplete={() => setShowSprout(false)} />
@@ -314,6 +333,17 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  lottieOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 99,
+    pointerEvents: 'none',
   },
   sproutOverlay: {
     position: 'absolute',

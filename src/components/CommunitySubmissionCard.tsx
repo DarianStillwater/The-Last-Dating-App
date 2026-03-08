@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants';
+import AnimatedPress from './ui/AnimatedPress';
+import AnimatedCounter from './ui/AnimatedCounter';
 
 interface CommunitySubmissionCardProps {
   questionText: string;
@@ -28,19 +30,21 @@ const CommunitySubmissionCard: React.FC<CommunitySubmissionCardProps> = ({
           <Text style={styles.ownBadge}>Your submission</Text>
         )}
       </View>
-      <TouchableOpacity
-        style={[styles.voteButton, hasVoted && styles.voteButtonActive]}
+      <AnimatedPress
+        feedbackAction="vote"
         onPress={hasVoted ? onUnvote : onVote}
+        style={[styles.voteButton, hasVoted && styles.voteButtonActive]}
       >
         <Ionicons
           name={hasVoted ? 'arrow-up' : 'arrow-up-outline'}
           size={18}
           color={hasVoted ? COLORS.background : COLORS.primary}
         />
-        <Text style={[styles.voteCount, hasVoted && styles.voteCountActive]}>
-          {voteCount}
-        </Text>
-      </TouchableOpacity>
+        <AnimatedCounter
+          value={voteCount}
+          style={[styles.voteCount, hasVoted && styles.voteCountActive]}
+        />
+      </AnimatedPress>
     </View>
   );
 };
