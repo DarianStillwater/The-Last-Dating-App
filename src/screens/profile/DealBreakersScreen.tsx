@@ -142,9 +142,9 @@ const DealBreakersScreen = () => {
       }));
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (editMode) {
-      handleSave();
+      await handleSave();
     } else {
       navigation.navigate('Bio', {
         profileData,
@@ -155,37 +155,43 @@ const DealBreakersScreen = () => {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    const { error } = await updateDealBreakers(currentSelections);
-    if (error) {
-      setIsSaving(false);
-      Alert.alert('Error', error);
-      return;
-    }
-
-    // Save community dealbreaker answers/preferences
-    const communityItems = getCommunityAnswersForSave();
-    if (communityItems.length > 0) {
-      const { error: commError } = await saveAnswersAndPreferences(communityItems);
-      if (commError) {
-        setIsSaving(false);
-        Alert.alert('Error', commError);
+    try {
+      setIsSaving(true);
+      const { error } = await updateDealBreakers(currentSelections);
+      if (error) {
+        triggerFeedback('error');
+        Alert.alert('Error', error);
         return;
       }
-    }
 
-    setIsSaving(false);
-    triggerFeedback('save');
-    showToast('Deal breakers saved!');
-    navigation.goBack();
+      // Save community dealbreaker answers/preferences
+      const communityItems = getCommunityAnswersForSave();
+      if (communityItems.length > 0) {
+        const { error: commError } = await saveAnswersAndPreferences(communityItems);
+        if (commError) {
+          triggerFeedback('error');
+          Alert.alert('Error', commError);
+          return;
+        }
+      }
+
+      triggerFeedback('save');
+      navigation.goBack();
+    } catch (e) {
+      console.error('Save deal breakers error:', e);
+      triggerFeedback('error');
+      Alert.alert('Error', 'Failed to save. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < totalSteps) {
       triggerFeedback('onboardingStep');
       setStep(step + 1);
     } else {
-      handleFinish();
+      await handleFinish();
     }
   };
 

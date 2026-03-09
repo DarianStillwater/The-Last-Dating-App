@@ -17,6 +17,7 @@ import { useProfileStore } from '../../store';
 import {
   COLORS,
   LOOKING_FOR_OPTIONS,
+  ALL_GENDERS,
   ETHNICITY_OPTIONS,
   RELIGION_OPTIONS,
   OFFSPRING_OPTIONS,
@@ -75,6 +76,14 @@ const EditProfileScreen: React.FC = () => {
       setLookingFor(lookingFor.filter((v) => v !== value));
     } else {
       setLookingFor([...lookingFor, value]);
+    }
+  };
+
+  const toggleEveryone = () => {
+    if (lookingFor.length === ALL_GENDERS.length) {
+      setLookingFor([]);
+    } else {
+      setLookingFor([...ALL_GENDERS]);
     }
   };
 
@@ -182,6 +191,7 @@ const EditProfileScreen: React.FC = () => {
           <View style={styles.sectionContent}>
             <View style={styles.optionsGrid}>
               {LOOKING_FOR_OPTIONS.map((opt) => renderOption(opt.value, opt.label, lookingFor.includes(opt.value), () => toggleLookingFor(opt.value)))}
+              {renderOption('everyone', 'Everyone', lookingFor.length === ALL_GENDERS.length, toggleEveryone)}
             </View>
           </View>
         )}

@@ -64,13 +64,16 @@ export const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-// Looking For Options
+// Looking For Options — individual gender preferences
 export const LOOKING_FOR_OPTIONS = [
   { value: 'male', label: 'Men' },
   { value: 'female', label: 'Women' },
   { value: 'non-binary', label: 'Non-binary people' },
-  { value: 'other', label: 'Everyone' },
+  { value: 'other', label: 'Other' },
 ];
+
+// All gender values for "Everyone" selection
+export const ALL_GENDERS = LOOKING_FOR_OPTIONS.map((o) => o.value);
 
 // Ethnicity Options
 export const ETHNICITY_OPTIONS = [

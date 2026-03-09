@@ -15,7 +15,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import PlantCompanion from '../../components/PlantCompanion';
 import GrowingVine from '../../components/GrowingVine';
-import { COLORS, GENDER_OPTIONS, LOOKING_FOR_OPTIONS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DRUGS_OPTIONS, DIET_OPTIONS, INCOME_OPTIONS, HEIGHT_RANGE, cmToFeetInches } from '../../constants';
+import { COLORS, GENDER_OPTIONS, LOOKING_FOR_OPTIONS, ALL_GENDERS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, OFFSPRING_OPTIONS, SMOKER_OPTIONS, ALCOHOL_OPTIONS, DRUGS_OPTIONS, DIET_OPTIONS, INCOME_OPTIONS, HEIGHT_RANGE, cmToFeetInches } from '../../constants';
 import { PLANTER_STAGES } from '../../theme/plantMetaphors';
 import { triggerFeedback } from '../../services/feedback';
 
@@ -47,6 +47,14 @@ const BasicInfoScreen = () => {
       setLookingFor(lookingFor.filter((v) => v !== value));
     } else {
       setLookingFor([...lookingFor, value]);
+    }
+  };
+
+  const toggleEveryone = () => {
+    if (lookingFor.length === ALL_GENDERS.length) {
+      setLookingFor([]);
+    } else {
+      setLookingFor([...ALL_GENDERS]);
     }
   };
 
@@ -149,6 +157,7 @@ const BasicInfoScreen = () => {
         {LOOKING_FOR_OPTIONS.map((opt) =>
           renderOption(opt.value, opt.label, lookingFor.includes(opt.value), () => toggleLookingFor(opt.value))
         )}
+        {renderOption('everyone', 'Everyone', lookingFor.length === ALL_GENDERS.length, toggleEveryone)}
       </View>
     </>
   );
