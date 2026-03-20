@@ -19,6 +19,9 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
 import HintBubble from '../../components/HintBubble';
 import AnimatedPress from '../../components/ui/AnimatedPress';
+import QuestionGameCard from '../../components/QuestionGameCard';
+import VoiceMessageBubble from '../../components/VoiceMessageBubble';
+import VoiceRecordButton from '../../components/VoiceRecordButton';
 import { useMessageStore, useMatchStore, useAuthStore, useTrustStore } from '../../store';
 import { COLORS, APP_CONFIG, TRUST_CONFIG, calculateAge } from '../../constants';
 import { TRUST_COPY } from '../../theme/plantMetaphors';
@@ -40,9 +43,18 @@ const ChatScreen = () => {
     isLoading,
     isSending,
     shouldShowDateSuggestion,
+    shouldShowQuestionGame,
+    activeGame,
+    voiceMessages,
     fetchMessages,
     sendMessage,
     subscribeToMessages,
+    startQuestionGame,
+    answerQuestionGame,
+    subscribeToGameAnswers,
+    sendVoiceMessage,
+    markVoiceMessageListened,
+    subscribeToVoiceMessages,
   } = useMessageStore();
 
   const [inputText, setInputText] = useState('');
@@ -56,9 +68,20 @@ const ChatScreen = () => {
 
   useEffect(() => {
     fetchMessages(matchId);
-    const unsubscribe = subscribeToMessages(matchId);
-    return unsubscribe;
+    const unsubMessages = subscribeToMessages(matchId);
+    const unsubVoice = subscribeToVoiceMessages(matchId);
+    return () => {
+      unsubMessages();
+      unsubVoice();
+    };
   }, [matchId]);
+
+  // Subscribe to game answer updates when a game is active
+  useEffect(() => {
+    if (!activeGame || activeGame.status === 'revealed' || activeGame.status === 'expired') return;
+    const unsub = subscribeToGameAnswers(activeGame.id);
+    return unsub;
+  }, [activeGame?.id, activeGame?.status]);
 
   useEffect(() => {
     if (match?.date_accepted_at && otherUser) {
@@ -84,6 +107,29 @@ const ChatScreen = () => {
       }, 100);
     }
   }, [messages.length]);
+
+  const handleStartGame = async () => {
+    const { error } = await startQuestionGame(matchId);
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      triggerFeedback('bloom');
+    }
+  };
+
+  const handleVoiceRecordComplete = async (uri: string, durationSeconds: number) => {
+    const { error } = await sendVoiceMessage(matchId, uri, durationSeconds);
+    if (error) {
+      triggerFeedback('error');
+      Alert.alert('Unable to send', error);
+    } else {
+      triggerFeedback('messageSend');
+    }
+  };
+
+  // Check if both users have voice messages enabled
+  const otherUserProfile = otherUser as any;
+  const voiceEnabled = user && (user as any).voice_calls_enabled && otherUserProfile?.voice_calls_enabled;
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -297,7 +343,31 @@ const ChatScreen = () => {
         </TouchableOpacity>
       )}
 
-      {/* Messages */}
+      {/* Question game banner */}
+      {shouldShowQuestionGame && !activeGame && (
+        <TouchableOpacity style={styles.gameBanner} onPress={handleStartGame}>
+          <View style={styles.dateBannerContent}>
+            <Ionicons name="game-controller" size={24} color={COLORS.secondary} />
+            <View style={styles.dateBannerText}>
+              <Text style={styles.dateBannerTitle}>Conversation getting quiet?</Text>
+              <Text style={styles.dateBannerSubtitle}>Tap to play a question game!</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.secondary} />
+        </TouchableOpacity>
+      )}
+
+      {/* Active question game card */}
+      {activeGame && activeGame.status !== 'expired' && user && (
+        <QuestionGameCard
+          game={activeGame}
+          currentUserId={user.id}
+          otherUserName={otherUser?.first_name || 'Match'}
+          onAnswer={answerQuestionGame}
+        />
+      )}
+
+      {/* Messages + voice messages interleaved */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -306,6 +376,20 @@ const ChatScreen = () => {
         contentContainerStyle={styles.messagesList}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        ListFooterComponent={
+          voiceMessages.length > 0 ? (
+            <View style={styles.voiceMessagesSection}>
+              {voiceMessages.map((vm) => (
+                <VoiceMessageBubble
+                  key={vm.id}
+                  voiceMessage={vm}
+                  isMine={vm.sender_id === user?.id}
+                  onListened={markVoiceMessageListened}
+                />
+              ))}
+            </View>
+          ) : null
+        }
       />
 
       {/* Message limit warning */}
@@ -330,6 +414,12 @@ const ChatScreen = () => {
           maxLength={500}
           editable={canSend}
         />
+        {voiceEnabled && !inputText.trim() && (
+          <VoiceRecordButton
+            onRecordComplete={handleVoiceRecordComplete}
+            disabled={!canSend || isSending}
+          />
+        )}
         <AnimatedPress
           onPress={handleSend}
           disabled={!inputText.trim() || !canSend || isSending}
@@ -462,6 +552,20 @@ const styles = StyleSheet.create({
   reviewBannerSubtitle: {
     fontSize: 13,
     color: COLORS.primaryDark,
+  },
+  gameBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.secondary + '15',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
+  },
+  voiceMessagesSection: {
+    paddingHorizontal: 16,
+    gap: 4,
   },
   messagesList: {
     paddingHorizontal: 16,

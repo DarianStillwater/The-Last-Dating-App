@@ -283,6 +283,52 @@ export interface MessageLimit {
   can_send: boolean;
 }
 
+// Question Game Types
+export type QuestionGameStatus = 'pending' | 'waiting' | 'revealed' | 'expired';
+
+export interface QuestionGame {
+  id: string;
+  match_id: string;
+  question: string;
+  status: QuestionGameStatus;
+  created_at: string;
+  expires_at: string;
+  revealed_at?: string;
+  answers?: QuestionGameAnswer[];
+}
+
+export interface QuestionGameAnswer {
+  id: string;
+  game_id: string;
+  user_id: string;
+  answer: string;
+  created_at: string;
+}
+
+// Voice Message Types
+export interface VoiceMessage {
+  id: string;
+  match_id: string;
+  sender_id: string;
+  audio_url: string;
+  audio_storage_path: string;
+  duration_seconds: number;
+  created_at: string;
+  listened_at?: string;
+}
+
+// Video Prompt Types
+export interface VideoPrompt {
+  id: string;
+  user_id: string;
+  prompt_key: string | null;
+  video_url: string;
+  thumbnail_url?: string;
+  duration_seconds: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 // Venue Types
 export type VenueCategory =
   | 'indian'

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Video, ResizeMode } from 'expo-av';
 import { supabase } from '../../lib/supabase';
 import { useTrustStore } from '../../store';
 import VerificationBadge from '../../components/ui/VerificationBadge';
@@ -13,6 +14,7 @@ import {
   TRUST_CONFIG,
   calculateAge,
   cmToFeetInches,
+  VIDEO_PROMPT_OPTIONS,
 } from '../../constants';
 import type { UserProfile, ReviewSummary, SocialLink } from '../../types';
 
@@ -32,6 +34,7 @@ const ProfileDetailScreen: React.FC = () => {
   const [vouchCount, setVouchCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [videoPrompts, setVideoPrompts] = useState<any[]>([]);
   const { fetchUserTrust } = useTrustStore();
 
   const flatListRef = useRef<FlatList<string>>(null);
@@ -62,6 +65,16 @@ const ProfileDetailScreen: React.FC = () => {
       }
 
       setProfile(data as UserProfile);
+
+      // Fetch video prompts
+      const { data: videos } = await supabase
+        .from('video_prompts')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      setVideoPrompts(videos || []);
     } catch (err) {
       setError('Failed to load profile. Please try again.');
     } finally {
@@ -216,6 +229,31 @@ const ProfileDetailScreen: React.FC = () => {
         {profile.bio ? (
           <Text style={styles.bioText} numberOfLines={3}>{profile.bio}</Text>
         ) : null}
+
+        {/* Video Prompts */}
+        {videoPrompts.length > 0 && (
+          <View style={styles.videoPromptsSection}>
+            {videoPrompts.map((vp) => (
+              <View key={vp.id} style={styles.videoPromptCard}>
+                {vp.prompt_key && (
+                  <Text style={styles.videoPromptLabel}>
+                    {VIDEO_PROMPT_OPTIONS.find((o) => o.key === vp.prompt_key)?.label || 'Video'}
+                  </Text>
+                )}
+                {!vp.prompt_key && (
+                  <Text style={styles.videoPromptLabel}>Intro Video</Text>
+                )}
+                <Video
+                  source={{ uri: vp.video_url }}
+                  style={styles.videoPlayer}
+                  resizeMode={ResizeMode.CONTAIN}
+                  useNativeControls
+                  isLooping={false}
+                />
+              </View>
+            ))}
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.seeMoreButton}
@@ -372,6 +410,27 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 22,
     marginBottom: 16,
+  },
+  videoPromptsSection: {
+    marginTop: 16,
+    gap: 12,
+  },
+  videoPromptCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  videoPromptLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.secondary,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  videoPlayer: {
+    width: '100%',
+    height: 200,
   },
   seeMoreButton: {
     flexDirection: 'row',

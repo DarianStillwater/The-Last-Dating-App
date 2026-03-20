@@ -21,6 +21,20 @@ export const APP_CONFIG = {
   DEAL_DEFAULT_EXPIRY_HOURS: 48,
   DEAL_REDEMPTION_CODE_LENGTH: 8,
 
+  // Question game
+  QUIET_PERIOD_HOURS: 24,
+  GAME_EXPIRY_HOURS: 24,
+  GAME_MAX_ANSWER_LENGTH: 300,
+
+  // Voice messages
+  VOICE_MAX_DURATION_SECONDS: 60,
+  VOICE_MAX_SIZE_MB: 2,
+
+  // Video prompts
+  VIDEO_MAX_DURATION_SECONDS: 30,
+  VIDEO_MAX_SIZE_MB: 10,
+  MAX_VIDEO_PROMPTS: 3,
+
   // Community dealbreakers
   COMMUNITY_DEALBREAKER_CYCLE_DAYS: 30,
   COMMUNITY_SUBMISSION_MAX_LENGTH: 200,
@@ -248,6 +262,34 @@ export const VENUE_CATEGORY_GROUPS = [
 
 // Flat array for backward compatibility (venueStore, types, etc.)
 export const VENUE_CATEGORIES = VENUE_CATEGORY_GROUPS.flatMap((g) => g.categories);
+
+// Question Game Prompts
+export const QUESTION_GAME_PROMPTS = [
+  "What's the most spontaneous thing you've ever done?",
+  "If you could have dinner with anyone, who would it be?",
+  "What's your most unpopular opinion?",
+  "What's the best gift you've ever received?",
+  "If you weren't doing your current job, what would you be doing?",
+  "What's the last thing that made you laugh out loud?",
+  "What's your love language?",
+  "What's the most adventurous food you've tried?",
+  "If you could live anywhere for a year, where would it be?",
+  "What's a skill you'd love to learn?",
+  "What does your ideal weekend look like?",
+  "What's the best advice you've ever received?",
+  "What's something most people don't know about you?",
+  "What's the last show you binge-watched?",
+  "If you could have any superpower, what would it be?",
+];
+
+// Video Prompt Options
+export const VIDEO_PROMPT_OPTIONS = [
+  { key: 'ideal_date', label: 'My ideal date would be...' },
+  { key: 'way_to_heart', label: 'The way to my heart is...' },
+  { key: 'looking_for', label: "I'm looking for someone who..." },
+  { key: 'friends_say', label: 'My friends would describe me as...' },
+  { key: 'perfect_sunday', label: 'A perfect Sunday looks like...' },
+];
 
 // Report Reasons
 export const REPORT_REASONS = [

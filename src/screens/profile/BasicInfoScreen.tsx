@@ -196,7 +196,7 @@ const BasicInfoScreen = () => {
   const renderStep3 = () => (
     <>
       <Text style={styles.sectionTitle}>Religion</Text>
-      <View style={styles.optionsList}>
+      <View style={styles.optionsGrid}>
         {RELIGION_OPTIONS.map((opt) =>
           renderOption(opt.value, opt.label, religion === opt.value, () => setReligion(opt.value))
         )}

@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 import { supabase, uploadPhotoFromUri, deleteImage } from '../lib/supabase';
-import type { UserProfile, DealBreakers } from '../types';
+import type { UserProfile, DealBreakers, VideoPrompt } from '../types';
 import { useAuthStore } from './authStore';
 import { addDays, format } from 'date-fns';
 
 interface ProfileState {
   profile: UserProfile | null;
   dealBreakers: DealBreakers | null;
+  videoPrompts: VideoPrompt[];
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchProfile: () => Promise<void>;
   fetchDealBreakers: () => Promise<void>;
@@ -22,11 +23,17 @@ interface ProfileState {
   updateLocation: (lat: number, lng: number, city?: string, state?: string) => Promise<void>;
   pauseProfile: (paused: boolean) => Promise<void>;
   deleteAccount: () => Promise<{ error: string | null }>;
+
+  // Video prompt actions
+  fetchVideoPrompts: (userId?: string) => Promise<void>;
+  uploadVideoPrompt: (uri: string, durationSeconds: number, promptKey?: string) => Promise<{ error: string | null }>;
+  deleteVideoPrompt: (promptId: string) => Promise<{ error: string | null }>;
 }
 
 export const useProfileStore = create<ProfileState>((set, get) => ({
   profile: null,
   dealBreakers: null,
+  videoPrompts: [],
   isLoading: false,
   error: null,
 
@@ -452,6 +459,123 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       // Sign out
       await useAuthStore.getState().signOut();
 
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // --------------------------------------------------------
+  // Video Prompts
+  // --------------------------------------------------------
+
+  fetchVideoPrompts: async (userId?: string) => {
+    const targetId = userId || get().profile?.id;
+    if (!targetId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('video_prompts')
+        .select('*')
+        .eq('user_id', targetId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      set({ videoPrompts: (data || []) as VideoPrompt[] });
+    } catch (error) {
+      console.error('Error fetching video prompts:', error);
+    }
+  },
+
+  uploadVideoPrompt: async (uri: string, durationSeconds: number, promptKey?: string) => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user?.id) return { error: 'Not authenticated' };
+
+    try {
+      set({ isLoading: true });
+
+      const userId = session.user.id;
+      const storagePath = `${userId}/${Date.now()}.mp4`;
+
+      // Upload video
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.access_token) return { error: 'Not authenticated' };
+
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/profile-videos/${storagePath}`;
+
+      const { uploadAsync } = await import('expo-file-system/legacy');
+      const result = await uploadAsync(uploadUrl, uri, {
+        httpMethod: 'POST',
+        uploadType: 0,
+        headers: {
+          Authorization: `Bearer ${authSession.access_token}`,
+          'Content-Type': 'video/mp4',
+          'x-upsert': 'true',
+        },
+      });
+
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error(`Upload failed: ${result.status}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-videos')
+        .getPublicUrl(storagePath);
+
+      // Create video prompt record
+      const { error } = await supabase
+        .from('video_prompts')
+        .insert({
+          user_id: userId,
+          prompt_key: promptKey || null,
+          video_url: publicUrl,
+          video_storage_path: storagePath,
+          duration_seconds: durationSeconds,
+        });
+
+      if (error) throw error;
+
+      // Refresh
+      await get().fetchVideoPrompts();
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  deleteVideoPrompt: async (promptId: string) => {
+    try {
+      set({ isLoading: true });
+
+      // Get the prompt to find storage path
+      const { data: prompt } = await supabase
+        .from('video_prompts')
+        .select('video_storage_path')
+        .eq('id', promptId)
+        .single();
+
+      if (prompt?.video_storage_path) {
+        await supabase.storage
+          .from('profile-videos')
+          .remove([prompt.video_storage_path]);
+      }
+
+      const { error } = await supabase
+        .from('video_prompts')
+        .update({ is_active: false })
+        .eq('id', promptId);
+
+      if (error) throw error;
+
+      await get().fetchVideoPrompts();
       return { error: null };
     } catch (error: any) {
       return { error: error.message };

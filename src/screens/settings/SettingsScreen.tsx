@@ -19,6 +19,7 @@ const SettingsScreen = () => {
 
   const [notifications, setNotifications] = useState(true);
   const [isPaused, setIsPaused] = useState(profile?.is_paused || false);
+  const [voiceEnabled, setVoiceEnabled] = useState((profile as any)?.voice_calls_enabled || false);
   const [expandedSection, setExpandedSection] = useState<string | null>('notifications');
 
   useEffect(() => {
@@ -119,6 +120,24 @@ const SettingsScreen = () => {
             label="Push Notifications"
             toggle={notifications}
             onPress={handleNotificationToggle}
+          />
+        )}
+
+        <SectionHeader title="FEATURES" sectionKey="features" />
+        {expandedSection === 'features' && (
+          <SettingItem
+            icon="mic-outline"
+            label="Voice Messages"
+            toggle={voiceEnabled}
+            onPress={async (value: boolean) => {
+              setVoiceEnabled(value);
+              if (user?.id) {
+                await supabase
+                  .from('profiles')
+                  .update({ voice_calls_enabled: value })
+                  .eq('id', user.id);
+              }
+            }}
           />
         )}
 

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Message, Match, MessageLimit } from '../types';
+import type { Message, Match, MessageLimit, QuestionGame, QuestionGameAnswer, VoiceMessage } from '../types';
 import { useAuthStore } from './authStore';
+import { APP_CONFIG, QUESTION_GAME_PROMPTS } from '../constants';
 import { format, isToday, parseISO } from 'date-fns';
 
 const INITIAL_MESSAGE_LIMIT = 3; // 3 messages per 24 hours until conversation established
@@ -16,7 +17,14 @@ interface MessageState {
   isSending: boolean;
   error: string | null;
   shouldShowDateSuggestion: boolean;
-  
+
+  // Question game state
+  shouldShowQuestionGame: boolean;
+  activeGame: QuestionGame | null;
+
+  // Voice message state
+  voiceMessages: VoiceMessage[];
+
   // Actions
   fetchConversations: () => Promise<void>;
   fetchMessages: (matchId: string) => Promise<void>;
@@ -25,6 +33,18 @@ interface MessageState {
   markMessagesAsRead: (matchId: string) => Promise<void>;
   setCurrentMatch: (matchId: string | null) => void;
   subscribeToMessages: (matchId: string) => () => void;
+
+  // Question game actions
+  fetchActiveGame: (matchId: string) => Promise<void>;
+  startQuestionGame: (matchId: string) => Promise<{ error: string | null }>;
+  answerQuestionGame: (gameId: string, answer: string) => Promise<{ error: string | null }>;
+  subscribeToGameAnswers: (gameId: string) => () => void;
+
+  // Voice message actions
+  fetchVoiceMessages: (matchId: string) => Promise<void>;
+  sendVoiceMessage: (matchId: string, audioUri: string, durationSeconds: number) => Promise<{ error: string | null }>;
+  markVoiceMessageListened: (messageId: string) => Promise<void>;
+  subscribeToVoiceMessages: (matchId: string) => () => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -36,6 +56,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   isSending: false,
   error: null,
   shouldShowDateSuggestion: false,
+  shouldShowQuestionGame: false,
+  activeGame: null,
+  voiceMessages: [],
 
   fetchConversations: async () => {
     const session = useAuthStore.getState().session;
@@ -110,10 +133,14 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         match.user2_message_count > 0 &&
         !match.date_suggested;
 
-      set({ 
+      set({
         messages: (data || []) as Message[],
         shouldShowDateSuggestion: shouldShow,
       });
+
+      // Fetch question game state and voice messages
+      await get().fetchActiveGame(matchId);
+      await get().fetchVoiceMessages(matchId);
 
       // Mark messages as read
       await get().markMessagesAsRead(matchId);
@@ -355,11 +382,309 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         (payload) => {
           const newMessage = payload.new as Message;
           const session = useAuthStore.getState().session;
-          
+
           // Only add if not sent by current user (already added locally)
           if (session?.user?.id !== newMessage.sender_id) {
             set((state) => ({
               messages: [...state.messages, newMessage],
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+
+  // --------------------------------------------------------
+  // Question Game
+  // --------------------------------------------------------
+
+  fetchActiveGame: async (matchId: string) => {
+    try {
+      // Fetch active/pending/waiting game for this match
+      const { data: game, error } = await supabase
+        .from('question_games')
+        .select(`
+          *,
+          answers:question_game_answers(*)
+        `)
+        .eq('match_id', matchId)
+        .in('status', ['pending', 'waiting', 'revealed'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      set({ activeGame: game as QuestionGame | null });
+
+      // Check if we should suggest a new game (no active game + quiet period)
+      if (!game) {
+        const { data: match } = await supabase
+          .from('matches')
+          .select('last_message_at, user1_message_count, user2_message_count')
+          .eq('id', matchId)
+          .single();
+
+        if (match && match.last_message_at && match.user1_message_count > 0 && match.user2_message_count > 0) {
+          const lastMessageTime = new Date(match.last_message_at).getTime();
+          const quietThreshold = APP_CONFIG.QUIET_PERIOD_HOURS * 60 * 60 * 1000;
+          const isQuiet = Date.now() - lastMessageTime >= quietThreshold;
+          set({ shouldShowQuestionGame: isQuiet });
+        }
+      } else {
+        set({ shouldShowQuestionGame: false });
+      }
+    } catch (error) {
+      console.error('Error fetching active game:', error);
+    }
+  },
+
+  startQuestionGame: async (matchId: string) => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user?.id) return { error: 'Not authenticated' };
+
+    try {
+      // Pick a random question
+      const question = QUESTION_GAME_PROMPTS[Math.floor(Math.random() * QUESTION_GAME_PROMPTS.length)];
+
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + APP_CONFIG.GAME_EXPIRY_HOURS);
+
+      const { data, error } = await supabase
+        .from('question_games')
+        .insert({
+          match_id: matchId,
+          question,
+          status: 'pending',
+          expires_at: expiresAt.toISOString(),
+        })
+        .select(`
+          *,
+          answers:question_game_answers(*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      set({ activeGame: data as QuestionGame, shouldShowQuestionGame: false });
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  },
+
+  answerQuestionGame: async (gameId: string, answer: string) => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user?.id) return { error: 'Not authenticated' };
+
+    try {
+      const trimmed = answer.trim();
+      if (!trimmed) return { error: 'Answer cannot be empty' };
+
+      // Submit answer
+      const { error: answerError } = await supabase
+        .from('question_game_answers')
+        .insert({
+          game_id: gameId,
+          user_id: session.user.id,
+          answer: trimmed,
+        });
+
+      if (answerError) throw answerError;
+
+      // Check how many answers exist now
+      const { data: answers } = await supabase
+        .from('question_game_answers')
+        .select('*')
+        .eq('game_id', gameId);
+
+      const answerCount = (answers || []).length;
+
+      // If both answered, reveal
+      if (answerCount >= 2) {
+        await supabase
+          .from('question_games')
+          .update({
+            status: 'revealed',
+            revealed_at: new Date().toISOString(),
+          })
+          .eq('id', gameId);
+      } else {
+        // First answer, set to waiting
+        await supabase
+          .from('question_games')
+          .update({ status: 'waiting' })
+          .eq('id', gameId);
+      }
+
+      // Refresh the game
+      const { data: updatedGame } = await supabase
+        .from('question_games')
+        .select(`
+          *,
+          answers:question_game_answers(*)
+        `)
+        .eq('id', gameId)
+        .single();
+
+      set({ activeGame: updatedGame as QuestionGame });
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  },
+
+  subscribeToGameAnswers: (gameId: string) => {
+    const channel = supabase
+      .channel(`game:${gameId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'question_game_answers',
+          filter: `game_id=eq.${gameId}`,
+        },
+        async () => {
+          // Refresh the game when an answer is added
+          const { data: game } = await supabase
+            .from('question_games')
+            .select(`
+              *,
+              answers:question_game_answers(*)
+            `)
+            .eq('id', gameId)
+            .single();
+
+          if (game) {
+            set({ activeGame: game as QuestionGame });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+
+  // --------------------------------------------------------
+  // Voice Messages
+  // --------------------------------------------------------
+
+  fetchVoiceMessages: async (matchId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('voice_messages')
+        .select('*')
+        .eq('match_id', matchId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      set({ voiceMessages: (data || []) as VoiceMessage[] });
+    } catch (error) {
+      console.error('Error fetching voice messages:', error);
+    }
+  },
+
+  sendVoiceMessage: async (matchId: string, audioUri: string, durationSeconds: number) => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user?.id) return { error: 'Not authenticated' };
+
+    try {
+      set({ isSending: true });
+
+      const userId = session.user.id;
+      const storagePath = `${userId}/${matchId}/${Date.now()}.m4a`;
+
+      // Upload audio file
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.access_token) return { error: 'Not authenticated' };
+
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/voice-messages/${storagePath}`;
+
+      const { uploadAsync } = await import('expo-file-system/legacy');
+      const result = await uploadAsync(uploadUrl, audioUri, {
+        httpMethod: 'POST',
+        uploadType: 0,
+        headers: {
+          Authorization: `Bearer ${authSession.access_token}`,
+          'Content-Type': 'audio/m4a',
+          'x-upsert': 'true',
+        },
+      });
+
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error(`Upload failed: ${result.status}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(storagePath);
+
+      // Create voice message record
+      const { data: voiceMsg, error } = await supabase
+        .from('voice_messages')
+        .insert({
+          match_id: matchId,
+          sender_id: userId,
+          audio_url: publicUrl,
+          audio_storage_path: storagePath,
+          duration_seconds: durationSeconds,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set((state) => ({
+        voiceMessages: [...state.voiceMessages, voiceMsg as VoiceMessage],
+      }));
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    } finally {
+      set({ isSending: false });
+    }
+  },
+
+  markVoiceMessageListened: async (messageId: string) => {
+    try {
+      await supabase
+        .from('voice_messages')
+        .update({ listened_at: new Date().toISOString() })
+        .eq('id', messageId)
+        .is('listened_at', null);
+    } catch (error) {
+      console.error('Error marking voice message listened:', error);
+    }
+  },
+
+  subscribeToVoiceMessages: (matchId: string) => {
+    const channel = supabase
+      .channel(`voice:${matchId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'voice_messages',
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as VoiceMessage;
+          const session = useAuthStore.getState().session;
+
+          if (session?.user?.id !== newMsg.sender_id) {
+            set((state) => ({
+              voiceMessages: [...state.voiceMessages, newMsg],
             }));
           }
         }

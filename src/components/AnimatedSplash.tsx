@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useCallback, useRef } from 'react';
+import { Text, StyleSheet, Dimensions, Animated as RNAnimated } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,7 +14,7 @@ import { PLANT_COLORS } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Lottie animation: 100 frames at 30fps = 3.33s. At 0.8x speed = ~4.2s
+// 100 frames at 30fps = 3.33s. At 0.8x speed = ~4.2s
 const LOTTIE_DURATION = 4200;
 
 interface AnimatedSplashProps {
@@ -23,36 +23,36 @@ interface AnimatedSplashProps {
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) => {
-  const lottieRef = useRef<LottieView>(null);
+  // Drive Lottie via RN's built-in Animated (most reliable on Android prod builds)
+  const lottieProgress = useRef(new RNAnimated.Value(0)).current;
 
-  // Title + scene opacity
+  // Title + scene opacity via Reanimated
   const titleOpacity = useSharedValue(0);
   const sceneOpacity = useSharedValue(1);
 
   useEffect(() => {
     onReady?.();
 
-    // Play Lottie natively via ref (works reliably in production builds)
-    lottieRef.current?.play();
+    // Animate Lottie progress 0 → 1 using RN Animated
+    RNAnimated.timing(lottieProgress, {
+      toValue: 1,
+      duration: LOTTIE_DURATION,
+      easing: RNAnimated.Easing?.linear ?? ((t: number) => t),
+      useNativeDriver: false, // progress prop can't use native driver
+    }).start(() => {
+      // Lottie done — fade in title
+      titleOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
 
-    // Title fades in after Lottie completes
-    titleOpacity.value = withDelay(
-      LOTTIE_DURATION,
-      withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) })
-    );
+      // Hold 2.5s, then fade out
+      sceneOpacity.value = withDelay(
+        2500,
+        withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) })
+      );
 
-    // Hold for 2.5s after title appears, then fade out
-    sceneOpacity.value = withDelay(
-      LOTTIE_DURATION + 2500,
-      withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) })
-    );
-
-    // Complete after fade
-    const timer = setTimeout(() => {
-      onComplete();
-    }, LOTTIE_DURATION + 2900);
-
-    return () => clearTimeout(timer);
+      setTimeout(() => {
+        onComplete();
+      }, 2900);
+    });
   }, []);
 
   const containerStyle = useAnimatedStyle(() => ({
@@ -68,11 +68,9 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
       <ReducedMotionConfig mode={ReduceMotion.Never} />
       <Animated.View style={[styles.container, containerStyle]}>
         <LottieView
-          ref={lottieRef}
           source={require('../../assets/animations/sprout-growth.json')}
-          autoPlay={false}
+          progress={lottieProgress}
           loop={false}
-          speed={0.8}
           style={styles.lottie}
         />
 

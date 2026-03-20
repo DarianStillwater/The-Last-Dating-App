@@ -36,6 +36,7 @@ import ProfileDetailsScreen from '../screens/matching/ProfileDetailsScreen';
 import DateSuggestionScreen from '../screens/venues/DateSuggestionScreen';
 import VenueSelectionScreen from '../screens/venues/VenueSelectionScreen';
 import DealRedemptionScreen from '../screens/venues/DealRedemptionScreen';
+import VideoPromptsScreen from '../screens/profile/VideoPromptsScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import PostDateReviewScreen from '../screens/profile/PostDateReviewScreen';
@@ -180,6 +181,13 @@ const MainNavigator = () => (
       options={{
         animation: 'slide_from_bottom',
         presentation: 'modal',
+      }}
+    />
+    <MainStack.Screen
+      name="VideoPrompts"
+      component={VideoPromptsScreen}
+      options={{
+        animation: 'slide_from_right',
       }}
     />
     <MainStack.Screen
