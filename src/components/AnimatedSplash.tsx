@@ -1,11 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
-import LottieView from 'lottie-react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { PLANT_COLORS } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const LOTTIE_DURATION = 4200;
 
 interface AnimatedSplashProps {
   onComplete: () => void;
@@ -13,94 +10,45 @@ interface AnimatedSplashProps {
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) => {
-  const [showTitle, setShowTitle] = useState(false);
-  const [fading, setFading] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>(['mount']);
-  const progress = useRef(new Animated.Value(0)).current;
-  const lottieRef = useRef<LottieView>(null);
-
-  const log = (msg: string) => {
-    setDebugLog((prev) => [...prev, `${Date.now() % 100000}: ${msg}`]);
-  };
+  const [debugInfo, setDebugInfo] = useState('mounting...');
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     onReady?.();
-    log('useEffect fired');
+    setDebugInfo('ready');
 
-    // Approach 1: Animated.Value → progress prop
-    log('starting Animated.timing');
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: LOTTIE_DURATION,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      log(`timing finished: ${finished}`);
-    });
+    // Try to load Lottie and report
+    let lottieStatus = 'not tested';
+    try {
+      const LottieView = require('lottie-react-native').default;
+      lottieStatus = LottieView ? 'module loaded' : 'module is null';
+    } catch (e: any) {
+      lottieStatus = `import error: ${e.message}`;
+    }
 
-    // Listen to progress value
-    const listenerId = progress.addListener(({ value }) => {
-      if (value === 0) log('progress=0');
-      else if (value < 0.01) log(`progress started: ${value.toFixed(4)}`);
-      else if (Math.abs(value - 0.25) < 0.01) log('progress~0.25');
-      else if (Math.abs(value - 0.5) < 0.01) log('progress~0.5');
-      else if (Math.abs(value - 0.75) < 0.01) log('progress~0.75');
-      else if (value > 0.99) log(`progress done: ${value.toFixed(4)}`);
-    });
+    setDebugInfo(`lottie: ${lottieStatus}`);
 
-    // Approach 2 (fallback): also try ref.play after delay
-    const playTimer = setTimeout(() => {
-      log('calling ref.play(0,99)');
-      try {
-        lottieRef.current?.play(0, 99);
-        log('ref.play called ok');
-      } catch (e: any) {
-        log(`ref.play error: ${e.message}`);
-      }
-    }, 500);
+    const timer = setTimeout(() => {
+      setDone(true);
+      onComplete();
+    }, 5000);
 
-    const titleTimer = setTimeout(() => setShowTitle(true), LOTTIE_DURATION + 500);
-    const fadeTimer = setTimeout(() => setFading(true), LOTTIE_DURATION + 8000); // extra time for debugging
-    const completeTimer = setTimeout(() => onComplete(), LOTTIE_DURATION + 8400);
-
-    return () => {
-      progress.removeListener(listenerId);
-      clearTimeout(playTimer);
-      clearTimeout(titleTimer);
-      clearTimeout(fadeTimer);
-      clearTimeout(completeTimer);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
-  if (fading) return null;
+  if (done) return null;
 
   return (
     <View style={styles.container}>
-      <LottieView
-        ref={lottieRef}
-        source={require('../../assets/animations/sprout-growth.json')}
-        progress={progress as any}
-        autoPlay={false}
-        loop={false}
-        speed={0.8}
-        style={styles.lottie}
-        onAnimationFinish={() => log('onAnimationFinish')}
-        onLayout={() => log('lottie onLayout')}
-      />
-
-      {/* Debug overlay */}
-      <View style={styles.debugContainer}>
-        {debugLog.map((msg, i) => (
-          <Text key={i} style={styles.debugText}>{msg}</Text>
-        ))}
+      <View style={styles.debugBox}>
+        <Text style={styles.debugText}>Splash Debug</Text>
+        <Text style={styles.debugText}>{debugInfo}</Text>
       </View>
 
-      {showTitle && (
-        <View style={styles.titleContainer}>
-          <Text style={styles.appName}>THE LAST DATING APP</Text>
-          <Text style={styles.tagline}>Where real connections grow naturally</Text>
-        </View>
-      )}
+      <View style={styles.titleContainer}>
+        <Text style={styles.appName}>THE LAST DATING APP</Text>
+        <Text style={styles.tagline}>Where real connections grow naturally</Text>
+      </View>
     </View>
   );
 };
@@ -113,25 +61,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 999,
   },
-  lottie: {
-    width: 280,
-    height: 280,
-  },
-  debugContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+  debugBox: {
+    backgroundColor: 'rgba(0,0,0,0.8)',
     borderRadius: 8,
-    padding: 8,
-    maxHeight: 200,
+    padding: 16,
+    marginBottom: 40,
   },
   debugText: {
-    fontSize: 11,
+    fontSize: 16,
     color: '#0f0',
-    fontFamily: 'monospace',
-    lineHeight: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   titleContainer: {
     position: 'absolute',
@@ -141,7 +81,6 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontWeight: '300',
-    fontFamily: 'Nunito',
     letterSpacing: 4,
     color: 'rgba(255, 255, 255, 0.95)',
     marginBottom: 10,
@@ -149,7 +88,6 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 18,
     fontWeight: '400',
-    fontFamily: 'Caveat',
     letterSpacing: 1,
     color: 'rgba(255, 255, 255, 0.7)',
   },
