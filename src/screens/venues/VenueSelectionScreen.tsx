@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useVenueStore } from '../../store';
 import { COLORS, VENUE_CATEGORIES } from '../../constants';
 import Button from '../../components/ui/Button';
-import type { Venue } from '../../types';
+import type { Venue, VenueDeal } from '../../types';
 
 const VenueSelectionScreen = () => {
   const insets = useSafeAreaInsets();
@@ -14,7 +14,7 @@ const VenueSelectionScreen = () => {
   const route = useRoute<any>();
   const { matchId, category } = route.params;
 
-  const { venues, selectedVenue, isLoading, fetchVenuesForMatch, selectVenue, submitDateSuggestion } = useVenueStore();
+  const { venues, selectedVenue, isLoading, venueDeals, fetchVenuesForMatch, selectVenue, submitDateSuggestion, claimDeal } = useVenueStore();
 
   useEffect(() => {
     fetchVenuesForMatch(matchId, category);
@@ -23,25 +23,52 @@ const VenueSelectionScreen = () => {
   const handleSelectVenue = async () => {
     if (!selectedVenue) return;
     const { error } = await submitDateSuggestion(matchId, selectedVenue.id);
-    if (!error) {
-      navigation.goBack();
-      navigation.goBack();
+    if (error) return;
+
+    // If the selected venue has an active deal, auto-claim it and navigate to redemption
+    const deals = venueDeals[selectedVenue.id];
+    if (deals && deals.length > 0) {
+      const result = await claimDeal(deals[0].id, matchId);
+      if (!result.error && result.redemption) {
+        navigation.goBack();
+        navigation.goBack();
+        navigation.navigate('DealRedemption', { redemptionId: result.redemption.id });
+        return;
+      }
     }
+
+    navigation.goBack();
+    navigation.goBack();
+  };
+
+  const renderDealBadge = (deals: VenueDeal[]) => {
+    if (!deals || deals.length === 0) return null;
+    const deal = deals[0];
+    return (
+      <View style={styles.dealBadge}>
+        <Ionicons name="pricetag" size={14} color={COLORS.background} />
+        <Text style={styles.dealBadgeText}>{deal.title}</Text>
+      </View>
+    );
   };
 
   const renderVenue = ({ item }: { item: Venue }) => {
     const isSelected = selectedVenue?.id === item.id;
     const categoryInfo = VENUE_CATEGORIES.find((c) => c.value === item.category);
+    const deals = venueDeals[item.id];
 
     return (
       <TouchableOpacity
         style={[styles.venueCard, isSelected && styles.venueCardSelected]}
         onPress={() => selectVenue(isSelected ? null : item)}
       >
-        <Image
-          source={{ uri: item.photo_urls[0] || 'https://via.placeholder.com/200' }}
-          style={styles.venueImage}
-        />
+        <View>
+          <Image
+            source={{ uri: item.photo_urls[0] || 'https://via.placeholder.com/200' }}
+            style={styles.venueImage}
+          />
+          {renderDealBadge(deals)}
+        </View>
         <View style={styles.venueInfo}>
           <View style={styles.venueHeader}>
             <Text style={styles.venueName}>{item.name}</Text>
@@ -51,11 +78,19 @@ const VenueSelectionScreen = () => {
             <Text style={styles.categoryEmoji}>{categoryInfo?.emoji}</Text>
             <Text style={styles.categoryText}>{categoryInfo?.label}</Text>
           </View>
+          {deals && deals.length > 0 && (
+            <View style={styles.dealDetail}>
+              <Text style={styles.dealDetailText}>{deals[0].description}</Text>
+              {deals[0].terms && (
+                <Text style={styles.dealTerms}>{deals[0].terms}</Text>
+              )}
+            </View>
+          )}
           {item.description && (
             <Text style={styles.venueDescription} numberOfLines={2}>{item.description}</Text>
           )}
           <Text style={styles.venueAddress}>{item.address}</Text>
-          
+
           <View style={styles.venueActions}>
             {item.menu_url && (
               <TouchableOpacity
@@ -213,6 +248,42 @@ const styles = StyleSheet.create({
   venueImage: {
     width: '100%',
     height: 160,
+  },
+  dealBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.secondary,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  dealBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.background,
+  },
+  dealDetail: {
+    backgroundColor: COLORS.secondary + '15',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.secondary,
+  },
+  dealDetailText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+    lineHeight: 18,
+  },
+  dealTerms: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   venueInfo: {
     padding: 16,

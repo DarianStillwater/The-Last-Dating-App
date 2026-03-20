@@ -29,15 +29,23 @@
         "backgroundColor": "#40916C"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b2a62317-dd4b-45ed-8a29-4c97844fefdd"
     },
     "plugins": [
       "expo-camera",
@@ -50,8 +58,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "b2a62317-dd4b-45ed-8a29-4c97844fefdd"
       }
-    }
+    },
+    "owner": "rogerooni"
   }
 }

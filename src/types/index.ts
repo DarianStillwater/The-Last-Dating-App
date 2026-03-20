@@ -352,6 +352,38 @@ export interface DateSuggestion {
   responded_at?: string;
 }
 
+// Venue Deal Types
+export interface VenueDeal {
+  id: string;
+  venue_id: string;
+  venue?: Venue;
+  title: string;
+  description: string;
+  terms?: string;
+  expiry_hours: number;
+  max_redemptions?: number;
+  redemption_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DealRedemptionStatus = 'active' | 'redeemed' | 'expired';
+
+export interface DealRedemption {
+  id: string;
+  deal_id: string;
+  deal?: VenueDeal;
+  match_id: string;
+  user_id: string;
+  redemption_code: string;
+  status: DealRedemptionStatus;
+  expires_at: string;
+  redeemed_at?: string;
+  venue_confirmed: boolean;
+  created_at: string;
+}
+
 // Trust & Safety Types
 export type AccuracyRating = 'yes' | 'mostly' | 'no';
 export type SocialProvider = 'instagram' | 'linkedin';
@@ -498,6 +530,7 @@ export type MatchesStackParamList = {
   Chat: { matchId: string };
   DateSuggestion: { matchId: string };
   VenueSelection: { matchId: string; category?: VenueCategory };
+  DealRedemption: { redemptionId: string };
 };
 
 export type ProfileStackParamList = {

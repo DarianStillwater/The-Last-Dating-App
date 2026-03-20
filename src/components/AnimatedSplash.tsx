@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Text, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedProps,
   withTiming,
   withDelay,
   Easing,
@@ -12,8 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
 import { PLANT_COLORS } from '../theme';
-
-const AnimatedLottieView = Animated.createAnimatedComponent(LottieView);
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -26,8 +23,7 @@ interface AnimatedSplashProps {
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) => {
-  // Drive Lottie progress from 0 → 1 via Reanimated
-  const lottieProgress = useSharedValue(0);
+  const lottieRef = useRef<LottieView>(null);
 
   // Title + scene opacity
   const titleOpacity = useSharedValue(0);
@@ -36,11 +32,8 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
   useEffect(() => {
     onReady?.();
 
-    // Animate Lottie progress from 0 to 1
-    lottieProgress.value = withTiming(1, {
-      duration: LOTTIE_DURATION,
-      easing: Easing.linear,
-    });
+    // Play Lottie natively via ref (works reliably in production builds)
+    lottieRef.current?.play();
 
     // Title fades in after Lottie completes
     titleOpacity.value = withDelay(
@@ -62,10 +55,6 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
     return () => clearTimeout(timer);
   }, []);
 
-  const animatedLottieProps = useAnimatedProps(() => ({
-    progress: lottieProgress.value,
-  }));
-
   const containerStyle = useAnimatedStyle(() => ({
     opacity: sceneOpacity.value,
   }));
@@ -78,12 +67,13 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
     <>
       <ReducedMotionConfig mode={ReduceMotion.Never} />
       <Animated.View style={[styles.container, containerStyle]}>
-        <AnimatedLottieView
+        <LottieView
+          ref={lottieRef}
           source={require('../../assets/animations/sprout-growth.json')}
           autoPlay={false}
           loop={false}
+          speed={0.8}
           style={styles.lottie}
-          animatedProps={animatedLottieProps}
         />
 
         {/* Title + tagline */}

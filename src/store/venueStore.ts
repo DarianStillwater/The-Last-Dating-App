@@ -1,9 +1,20 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Venue, DateSuggestion, VenueCategory, Match } from '../types';
+import type { Venue, DateSuggestion, VenueCategory, Match, VenueDeal, DealRedemption } from '../types';
 import { useAuthStore } from './authStore';
+import { APP_CONFIG } from '../constants';
 
 const MAX_VENUE_SUGGESTIONS = 3; // 3 venues per category per radius
+
+// Generate a random alphanumeric redemption code
+const generateRedemptionCode = (length: number = APP_CONFIG.DEAL_REDEMPTION_CODE_LENGTH): string => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/1/O/0 for readability
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
 
 interface VenueState {
   venues: Venue[];
@@ -14,7 +25,12 @@ interface VenueState {
   isLoading: boolean;
   error: string | null;
   midpoint: { lat: number; lng: number } | null;
-  
+
+  // Deal state
+  venueDeals: Record<string, VenueDeal[]>; // keyed by venue_id
+  activeRedemption: DealRedemption | null;
+  userRedemptions: DealRedemption[];
+
   // Actions
   fetchVenuesForMatch: (matchId: string, category?: VenueCategory) => Promise<void>;
   selectCategory: (category: VenueCategory) => void;
@@ -23,6 +39,12 @@ interface VenueState {
   respondToDateSuggestion: (suggestionId: string, accepted: boolean) => Promise<{ error: string | null }>;
   trackVenueClick: (venueId: string) => Promise<void>;
   fetchDateSuggestion: (matchId: string) => Promise<void>;
+
+  // Deal actions
+  fetchDealsForVenues: (venueIds: string[]) => Promise<void>;
+  claimDeal: (dealId: string, matchId: string) => Promise<{ error: string | null; redemption?: DealRedemption }>;
+  fetchRedemption: (redemptionId: string) => Promise<void>;
+  fetchUserRedemptions: () => Promise<void>;
 }
 
 // Calculate midpoint between two coordinates
@@ -51,6 +73,9 @@ export const useVenueStore = create<VenueState>((set, get) => ({
   venues: [],
   selectedVenue: null,
   dateSuggestion: null,
+  venueDeals: {},
+  activeRedemption: null,
+  userRedemptions: [],
   categories: [
     'indian', 'thai', 'french', 'korean', 'japanese', 'italian', 
     'mexican', 'american', 'chinese', 'mediterranean', 'vietnamese',
@@ -142,10 +167,15 @@ export const useVenueStore = create<VenueState>((set, get) => ({
           .eq('id', venue.id);
       }
 
-      set({ 
+      set({
         venues: nearbyVenues,
         selectedCategory: category || null,
       });
+
+      // Fetch active deals for displayed venues
+      if (nearbyVenues.length > 0) {
+        get().fetchDealsForVenues(nearbyVenues.map((v: Venue) => v.id));
+      }
     } catch (error: any) {
       set({ error: error.message });
     } finally {
@@ -300,6 +330,133 @@ export const useVenueStore = create<VenueState>((set, get) => ({
       console.error('Error fetching date suggestion:', error);
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  fetchDealsForVenues: async (venueIds: string[]) => {
+    if (venueIds.length === 0) return;
+    try {
+      const { data, error } = await supabase
+        .from('venue_deals')
+        .select('*')
+        .in('venue_id', venueIds)
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      const dealsByVenue: Record<string, VenueDeal[]> = {};
+      for (const deal of (data || []) as VenueDeal[]) {
+        if (!dealsByVenue[deal.venue_id]) dealsByVenue[deal.venue_id] = [];
+        dealsByVenue[deal.venue_id].push(deal);
+      }
+      set({ venueDeals: dealsByVenue });
+    } catch (error) {
+      console.error('Error fetching venue deals:', error);
+    }
+  },
+
+  claimDeal: async (dealId: string, matchId: string) => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user?.id) return { error: 'Not authenticated' };
+
+    try {
+      set({ isLoading: true });
+
+      // Get the deal to calculate expiry
+      const { data: deal, error: dealError } = await supabase
+        .from('venue_deals')
+        .select('*')
+        .eq('id', dealId)
+        .single();
+
+      if (dealError) throw dealError;
+      if (!deal) throw new Error('Deal not found');
+
+      // Check max redemptions
+      if (deal.max_redemptions && deal.redemption_count >= deal.max_redemptions) {
+        return { error: 'This deal has reached its maximum redemptions' };
+      }
+
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + deal.expiry_hours);
+
+      const redemptionCode = generateRedemptionCode();
+
+      const { data: redemption, error } = await supabase
+        .from('deal_redemptions')
+        .insert({
+          deal_id: dealId,
+          match_id: matchId,
+          user_id: session.user.id,
+          redemption_code: redemptionCode,
+          status: 'active',
+          expires_at: expiresAt.toISOString(),
+        })
+        .select(`
+          *,
+          deal:venue_deals(*, venue:venues(*))
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Increment redemption count on the deal
+      await supabase
+        .from('venue_deals')
+        .update({ redemption_count: deal.redemption_count + 1 })
+        .eq('id', dealId);
+
+      set({ activeRedemption: redemption as DealRedemption });
+      return { error: null, redemption: redemption as DealRedemption };
+    } catch (error: any) {
+      return { error: error.message };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchRedemption: async (redemptionId: string) => {
+    try {
+      set({ isLoading: true });
+
+      const { data, error } = await supabase
+        .from('deal_redemptions')
+        .select(`
+          *,
+          deal:venue_deals(*, venue:venues(*))
+        `)
+        .eq('id', redemptionId)
+        .single();
+
+      if (error) throw error;
+
+      set({ activeRedemption: data as DealRedemption });
+    } catch (error: any) {
+      console.error('Error fetching redemption:', error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchUserRedemptions: async () => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('deal_redemptions')
+        .select(`
+          *,
+          deal:venue_deals(*, venue:venues(*))
+        `)
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      set({ userRedemptions: (data || []) as DealRedemption[] });
+    } catch (error) {
+      console.error('Error fetching user redemptions:', error);
     }
   },
 }));

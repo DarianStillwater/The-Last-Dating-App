@@ -35,6 +35,7 @@ import ProfileDetailScreen from '../screens/matching/ProfileDetailScreen';
 import ProfileDetailsScreen from '../screens/matching/ProfileDetailsScreen';
 import DateSuggestionScreen from '../screens/venues/DateSuggestionScreen';
 import VenueSelectionScreen from '../screens/venues/VenueSelectionScreen';
+import DealRedemptionScreen from '../screens/venues/DealRedemptionScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import PostDateReviewScreen from '../screens/profile/PostDateReviewScreen';
@@ -174,6 +175,14 @@ const MainNavigator = () => (
       }}
     />
     <MainStack.Screen
+      name="DealRedemption"
+      component={DealRedemptionScreen}
+      options={{
+        animation: 'slide_from_bottom',
+        presentation: 'modal',
+      }}
+    />
+    <MainStack.Screen
       name="EditProfile"
       component={EditProfileScreen}
       options={{
@@ -271,6 +280,7 @@ const linking: LinkingOptions<RootStackParamList> = {
         screens: {
           Chat: 'chat/:matchId',
           ProfileDetail: 'profile/:userId',
+          DealRedemption: 'deal/:redemptionId',
         },
       },
     },
