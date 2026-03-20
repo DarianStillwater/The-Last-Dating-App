@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { PLANT_COLORS } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const LOTTIE_DURATION = 4200;
 
 interface AnimatedSplashProps {
   onComplete: () => void;
@@ -11,19 +13,32 @@ interface AnimatedSplashProps {
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) => {
-  const [status, setStatus] = useState('mounting');
+  const [showTitle, setShowTitle] = useState(false);
   const [done, setDone] = useState(false);
+  const [status, setStatus] = useState('mounting');
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     onReady?.();
-    setStatus('lottie rendering');
+    setStatus('starting animation');
 
-    const timer = setTimeout(() => {
+    // Drive Lottie via progress prop with RN Animated
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: LOTTIE_DURATION,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start(() => {
+      setStatus('animation complete');
+      setShowTitle(true);
+    });
+
+    const completeTimer = setTimeout(() => {
       setDone(true);
       onComplete();
-    }, 6000);
+    }, LOTTIE_DURATION + 3000);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(completeTimer);
   }, []);
 
   if (done) return null;
@@ -32,21 +47,22 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
     <View style={styles.container}>
       <LottieView
         source={require('../../assets/animations/sprout-growth.json')}
-        autoPlay
+        progress={progress as any}
+        autoPlay={false}
         loop={false}
-        speed={0.8}
         style={styles.lottie}
-        onAnimationFinish={() => setStatus('animation finished')}
       />
 
       <View style={styles.debugBox}>
         <Text style={styles.debugText}>{status}</Text>
       </View>
 
-      <View style={styles.titleContainer}>
-        <Text style={styles.appName}>THE LAST DATING APP</Text>
-        <Text style={styles.tagline}>Where real connections grow naturally</Text>
-      </View>
+      {showTitle && (
+        <View style={styles.titleContainer}>
+          <Text style={styles.appName}>THE LAST DATING APP</Text>
+          <Text style={styles.tagline}>Where real connections grow naturally</Text>
+        </View>
+      )}
     </View>
   );
 };
