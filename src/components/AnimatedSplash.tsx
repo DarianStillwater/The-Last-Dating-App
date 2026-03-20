@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { PLANT_COLORS } from '../theme';
@@ -18,11 +18,9 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
   const [progress, setProgress] = useState(0);
   const [showTitle, setShowTitle] = useState(false);
   const [done, setDone] = useState(false);
-  const [debugText, setDebugText] = useState('v5 mounting');
 
   useEffect(() => {
     onReady?.();
-    setDebugText('v5 starting interval');
 
     let step = 0;
     const interval = setInterval(() => {
@@ -32,7 +30,6 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
 
       if (p >= 1) {
         clearInterval(interval);
-        setDebugText(`v5 done, steps=${step}`);
         setShowTitle(true);
       }
     }, FRAME_INTERVAL);
@@ -60,10 +57,6 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
         style={styles.lottie}
       />
 
-      <View style={styles.debugBox}>
-        <Text style={styles.debugText}>{debugText} | p={progress.toFixed(2)}</Text>
-      </View>
-
       {showTitle && (
         <View style={styles.titleContainer}>
           <Text style={styles.appName}>THE LAST DATING APP</Text>
@@ -86,18 +79,6 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
   },
-  debugBox: {
-    position: 'absolute',
-    top: 60,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    borderRadius: 8,
-    padding: 12,
-  },
-  debugText: {
-    fontSize: 14,
-    color: '#0f0',
-    fontWeight: 'bold',
-  },
   titleContainer: {
     position: 'absolute',
     bottom: SCREEN_HEIGHT * 0.2,
@@ -106,6 +87,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontWeight: '300',
+    fontFamily: 'Nunito',
     letterSpacing: 4,
     color: 'rgba(255, 255, 255, 0.95)',
     marginBottom: 10,
@@ -113,6 +95,7 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 18,
     fontWeight: '400',
+    fontFamily: 'Caveat',
     letterSpacing: 1,
     color: 'rgba(255, 255, 255, 0.7)',
   },
