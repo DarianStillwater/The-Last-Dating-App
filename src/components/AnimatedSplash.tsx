@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { PLANT_COLORS } from '../theme';
 
@@ -15,6 +15,20 @@ interface AnimatedSplashProps {
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) => {
   const [showTitle, setShowTitle] = useState(false);
   const [fading, setFading] = useState(false);
+  const lottieRef = useRef<LottieView>(null);
+  const hasStarted = useRef(false);
+
+  // Use onLayout to know when the LottieView is actually mounted,
+  // then play via ref. This is the most reliable approach for Android prod builds.
+  const handleLottieLayout = useCallback(() => {
+    if (hasStarted.current) return;
+    hasStarted.current = true;
+
+    // Small delay to ensure native view is fully ready
+    setTimeout(() => {
+      lottieRef.current?.play(0, 99);
+    }, 100);
+  }, []);
 
   useEffect(() => {
     onReady?.();
@@ -22,17 +36,17 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
     // Show title after Lottie completes
     const titleTimer = setTimeout(() => {
       setShowTitle(true);
-    }, LOTTIE_DURATION);
+    }, LOTTIE_DURATION + 200); // +200 for the play delay
 
     // Start fade out after title has been visible
     const fadeTimer = setTimeout(() => {
       setFading(true);
-    }, LOTTIE_DURATION + 2500);
+    }, LOTTIE_DURATION + 2700);
 
     // Complete
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, LOTTIE_DURATION + 2900);
+    }, LOTTIE_DURATION + 3100);
 
     return () => {
       clearTimeout(titleTimer);
@@ -46,11 +60,14 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
   return (
     <View style={styles.container}>
       <LottieView
+        ref={lottieRef}
         source={require('../../assets/animations/sprout-growth.json')}
-        autoPlay
+        autoPlay={false}
         loop={false}
         speed={0.8}
         style={styles.lottie}
+        onLayout={handleLottieLayout}
+        renderMode="AUTOMATIC"
       />
 
       {showTitle && (
