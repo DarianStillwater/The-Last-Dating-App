@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { PLANT_COLORS } from '../theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const LOTTIE_DURATION = 4200;
+const TOTAL_DURATION = 4200; // ms
+const FRAME_INTERVAL = 33; // ~30fps
+const TOTAL_STEPS = Math.ceil(TOTAL_DURATION / FRAME_INTERVAL);
 
 interface AnimatedSplashProps {
   onComplete: () => void;
@@ -13,32 +15,37 @@ interface AnimatedSplashProps {
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) => {
+  const [progress, setProgress] = useState(0);
   const [showTitle, setShowTitle] = useState(false);
   const [done, setDone] = useState(false);
-  const [status, setStatus] = useState('mounting');
-  const progress = useRef(new Animated.Value(0)).current;
+  const [debugText, setDebugText] = useState('v5 mounting');
 
   useEffect(() => {
     onReady?.();
-    setStatus('starting animation');
+    setDebugText('v5 starting interval');
 
-    // Drive Lottie via progress prop with RN Animated
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: LOTTIE_DURATION,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start(() => {
-      setStatus('animation complete');
-      setShowTitle(true);
-    });
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      const p = Math.min(step / TOTAL_STEPS, 1);
+      setProgress(p);
+
+      if (p >= 1) {
+        clearInterval(interval);
+        setDebugText(`v5 done, steps=${step}`);
+        setShowTitle(true);
+      }
+    }, FRAME_INTERVAL);
 
     const completeTimer = setTimeout(() => {
       setDone(true);
       onComplete();
-    }, LOTTIE_DURATION + 3000);
+    }, TOTAL_DURATION + 3000);
 
-    return () => clearTimeout(completeTimer);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(completeTimer);
+    };
   }, []);
 
   if (done) return null;
@@ -47,14 +54,14 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onComplete, onReady }) 
     <View style={styles.container}>
       <LottieView
         source={require('../../assets/animations/sprout-growth.json')}
-        progress={progress as any}
+        progress={progress}
         autoPlay={false}
         loop={false}
         style={styles.lottie}
       />
 
       <View style={styles.debugBox}>
-        <Text style={styles.debugText}>{status}</Text>
+        <Text style={styles.debugText}>{debugText} | p={progress.toFixed(2)}</Text>
       </View>
 
       {showTitle && (
