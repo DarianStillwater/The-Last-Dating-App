@@ -45,7 +45,9 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/b2a62317-dd4b-45ed-8a29-4c97844fefdd"
+      "url": "https://u.expo.dev/b2a62317-dd4b-45ed-8a29-4c97844fefdd",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 5000
     },
     "plugins": [
       "expo-camera",
@@ -54,7 +56,8 @@
       "expo-notifications",
       "expo-secure-store",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-updates"
     ],
     "extra": {
       "eas": {
